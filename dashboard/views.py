@@ -3,6 +3,7 @@ from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count
 from django.utils import timezone
@@ -10,7 +11,7 @@ from datetime import datetime, timedelta
 import json
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from .models import Siparis
+from .models import Siparis, UserProfile
 from .forms import SiparisForm
 
 def index(request):
@@ -150,10 +151,59 @@ def analytics(request):
     }
     return render(request, 'dashboard/analytics.html', context)
 
+@login_required
 def users(request):
-    """Users sayfası"""
+    """Users sayfası - Rol bazlı yetkilendirme"""
+    # Kullanıcının profilini al
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        # Eğer profil yoksa varsayılan olarak yönetici rolü ver
+        user_profile = UserProfile.objects.create(user=request.user, role='yonetici')
+    
+    # Admin kontrolü
+    is_admin = user_profile.is_admin()
+    
+    # Kullanıcı listesi - sadece admin görebilir
+    users_list = []
+    if is_admin:
+        users_list = User.objects.all().select_related('userprofile')
+    
+    # Kullanıcı oluşturma
+    if request.method == 'POST' and is_admin:
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        password = request.POST.get('password')
+        role = request.POST.get('role', 'yonetici')
+        
+        if username and password:
+            try:
+                # Kullanıcı oluştur
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name
+                )
+                
+                # Profil oluştur
+                UserProfile.objects.create(user=user, role=role)
+                
+                messages.success(request, f'Kullanıcı {username} başarıyla oluşturuldu!')
+                return redirect('dashboard:users')
+            except Exception as e:
+                messages.error(request, f'Kullanıcı oluşturulurken hata: {str(e)}')
+        else:
+            messages.error(request, 'Kullanıcı adı ve şifre gereklidir!')
+    
     context = {
         'page_title': 'Users',
+        'is_admin': is_admin,
+        'users_list': users_list,
+        'user_profile': user_profile,
     }
     return render(request, 'dashboard/users.html', context)
 

@@ -1,6 +1,35 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
+from django.contrib.auth.models import User
+
+class UserProfile(models.Model):
+    """Kullanıcı profil modeli - rol yönetimi için"""
+    
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('yonetici', 'Yönetici'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Kullanıcı")
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='yonetici', verbose_name="Rol")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Oluşturulma Tarihi")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Güncellenme Tarihi")
+    
+    class Meta:
+        verbose_name = "Kullanıcı Profili"
+        verbose_name_plural = "Kullanıcı Profilleri"
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.get_role_display()}"
+    
+    def is_admin(self):
+        """Admin rolü kontrolü"""
+        return self.role == 'admin'
+    
+    def is_yonetici(self):
+        """Yönetici rolü kontrolü"""
+        return self.role == 'yonetici'
 
 class Siparis(models.Model):
     """Sipariş modeli - Lastik, Akü, Jant siparişleri"""
