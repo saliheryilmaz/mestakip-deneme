@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Users - Mestakip{% endblock %}
+{% block page_name %}users{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Users</h1>
+        <p class="text-muted mb-0">Manage your users and their permissions.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-2"></i>
+            Add User
+        </button>
+    </div>
+</div>
+
+<!-- Users Content -->
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Users Management</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Users management content will be implemented here.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

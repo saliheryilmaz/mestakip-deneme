@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Calendar - Mestakip{% endblock %}
+{% block page_name %}calendar{% endblock %}
+
+{% block extra_css %}
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+<style>
+    .fc {
+        font-family: 'Inter', sans-serif;
+    }
+    .fc-toolbar-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+    .fc-button {
+        background-color: #6366f1;
+        border-color: #6366f1;
+        font-weight: 500;
+    }
+    .fc-button:hover {
+        background-color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    .fc-button:focus {
+        box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+    }
+    .fc-event {
+        border-radius: 6px;
+        border: none;
+        font-weight: 500;
+    }
+    .fc-daygrid-event {
+        margin: 1px 2px;
+    }
+    .fc-timegrid-event {
+        border-radius: 4px;
+    }
+    .fc-event-title {
+        font-weight: 500;
+    }
+    .calendar-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Takvim</h1>
+        <p class="text-muted mb-0">Etkinliklerinizi planlayın ve takip edin.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-primary" id="todayBtn">
+            <i class="bi bi-calendar-day me-2"></i>
+            Bugün
+        </button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#eventModal">
+            <i class="bi bi-plus-lg me-2"></i>
+            Yeni Etkinlik
+        </button>
+    </div>
+</div>
+
+<!-- Takvim Kartı -->
+<div class="card calendar-container">
+    <div class="card-body p-0">
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<!-- Etkinlik Modal -->
+<div class="modal fade" id="eventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Etkinlik</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="eventForm">
+                    <div class="mb-3">
+                        <label class="form-label">Etkinlik Başlığı</label>
+                        <input type="text" class="form-control" id="eventTitle" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Başlangıç Tarihi</label>
+                                <input type="datetime-local" class="form-control" id="eventStart" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Bitiş Tarihi</label>
+                                <input type="datetime-local" class="form-control" id="eventEnd" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea class="form-control" id="eventDescription" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Renk</label>
+                        <select class="form-select" id="eventColor">
+                            <option value="#3b82f6">Mavi</option>
+                            <option value="#10b981">Yeşil</option>
+                            <option value="#f59e0b">Sarı</option>
+                            <option value="#8b5cf6">Mor</option>
+                            <option value="#ef4444">Kırmızı</option>
+                            <option value="#6b7280">Gri</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" id="saveEvent">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Etkinlik Detay Modal -->
+<div class="modal fade" id="eventDetailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventDetailTitle">Etkinlik Detayı</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>Başlangıç:</strong> <span id="eventDetailStart"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Bitiş:</strong> <span id="eventDetailEnd"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Açıklama:</strong> <span id="eventDetailDescription"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="deleteEvent">Sil</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    
+    // Etkinlik verileri
+    var events = {{ events|safe }};
+    
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'tr',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+        },
+        buttonText: {
+            today: 'Bugün',
+            month: 'Ay',
+            week: 'Hafta',
+            day: 'Gün',
+            list: 'Liste'
+        },
+        events: events,
+        eventClick: function(info) {
+            showEventDetail(info.event);
+        },
+        dateClick: function(info) {
+            // Tarihe tıklandığında yeni etkinlik oluştur
+            document.getElementById('eventStart').value = info.dateStr + 'T09:00';
+            document.getElementById('eventEnd').value = info.dateStr + 'T10:00';
+            var eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+            eventModal.show();
+        },
+        eventDisplay: 'block',
+        height: 'auto',
+        contentHeight: 600,
+        dayMaxEvents: 3,
+        moreLinkClick: 'popover'
+    });
+    
+    calendar.render();
+    
+    // Bugün butonu
+    document.getElementById('todayBtn').addEventListener('click', function() {
+        calendar.today();
+    });
+    
+    // Yeni etkinlik kaydetme
+    document.getElementById('saveEvent').addEventListener('click', function() {
+        var title = document.getElementById('eventTitle').value;
+        var start = document.getElementById('eventStart').value;
+        var end = document.getElementById('eventEnd').value;
+        var description = document.getElementById('eventDescription').value;
+        var color = document.getElementById('eventColor').value;
+        
+        if (title && start && end) {
+            var newEvent = {
+                title: title,
+                start: start,
+                end: end,
+                description: description,
+                color: color
+            };
+            
+            calendar.addEvent(newEvent);
+            
+            // Formu temizle
+            document.getElementById('eventForm').reset();
+            
+            // Modal'ı kapat
+            var eventModal = bootstrap.Modal.getInstance(document.getElementById('eventModal'));
+            eventModal.hide();
+            
+            // Başarı mesajı
+            showAlert('Etkinlik başarıyla eklendi!', 'success');
+        }
+    });
+    
+    // Etkinlik detayını göster
+    function showEventDetail(event) {
+        document.getElementById('eventDetailTitle').textContent = event.title;
+        document.getElementById('eventDetailStart').textContent = event.start.toLocaleString('tr-TR');
+        document.getElementById('eventDetailEnd').textContent = event.end.toLocaleString('tr-TR');
+        document.getElementById('eventDetailDescription').textContent = event.extendedProps.description || 'Açıklama yok';
+        
+        var eventDetailModal = new bootstrap.Modal(document.getElementById('eventDetailModal'));
+        eventDetailModal.show();
+        
+        // Silme işlemi
+        document.getElementById('deleteEvent').onclick = function() {
+            if (confirm('Bu etkinliği silmek istediğinizden emin misiniz?')) {
+                event.remove();
+                eventDetailModal.hide();
+                showAlert('Etkinlik silindi!', 'warning');
+            }
+        };
+    }
+    
+    // Alert fonksiyonu
+    function showAlert(message, type) {
+        var alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-' + type + ' alert-dismissible fade show position-fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+        
+        document.body.appendChild(alertDiv);
+        
+        setTimeout(function() {
+            alertDiv.remove();
+        }, 3000);
+    }
+});
+</script>
+{% endblock %}

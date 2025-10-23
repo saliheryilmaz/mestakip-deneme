@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">{{ page_title }}</h1>
+            <p class="text-muted mb-0">Sipariş detaylarını görüntüleyin</p>
+        </div>
+        <div>
+            <a href="{% url 'dashboard:elements' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                Geri Dön
+            </a>
+            <a href="{% url 'dashboard:siparis_duzenle' siparis.id %}" class="btn btn-warning">
+                <i class="bi bi-pencil me-1"></i>
+                Düzenle
+            </a>
+        </div>
+    </div>
+
+    <!-- Sipariş Detay Kartı -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Sipariş Bilgileri
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Sipariş No</label>
+                                <p class="form-control-plaintext">#{{ siparis.id }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Cari (Firma)</label>
+                                <p class="form-control-plaintext">{{ siparis.cari_firma }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Marka</label>
+                                <p class="form-control-plaintext">{{ siparis.marka }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Ürün (Lastik Marka Model)</label>
+                                <p class="form-control-plaintext">{{ siparis.urun }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Grup</label>
+                                <p class="form-control-plaintext">
+                                    <span class="badge bg-{{ siparis.get_grup_display_color }}">{{ siparis.get_grup_display }}</span>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Mevsim</label>
+                                <p class="form-control-plaintext">
+                                    <span class="badge bg-{{ siparis.get_mevsim_display_color }}">{{ siparis.get_mevsim_display }}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Adet</label>
+                                <p class="form-control-plaintext">{{ siparis.adet }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Birim Fiyat</label>
+                                <p class="form-control-plaintext">₺{{ siparis.birim_fiyat|floatformat:2 }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Toplam Fiyat</label>
+                                <p class="form-control-plaintext">
+                                    <strong class="text-success">₺{{ siparis.toplam_fiyat|floatformat:2 }}</strong>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Ödeme</label>
+                                <p class="form-control-plaintext">{{ siparis.get_odeme_display }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Ambar</label>
+                                <p class="form-control-plaintext">
+                                    <span class="badge bg-primary">{{ siparis.get_ambar_display }}</span>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Durum</label>
+                                <p class="form-control-plaintext">
+                                    <span class="badge bg-{{ siparis.get_durum_display_color }}">{{ siparis.get_durum_display }}</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">SMS Durumu</label>
+                                <p class="form-control-plaintext">
+                                    <span class="badge bg-{{ siparis.get_sms_display_color }}">{{ siparis.get_sms_durum_display }}</span>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Öne Çıkar</label>
+                                <p class="form-control-plaintext">
+                                    {% if siparis.one_cikar %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-star-fill me-1"></i>Evet
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Hayır</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Açıklama</label>
+                                <p class="form-control-plaintext">{{ siparis.aciklama|default:"Açıklama yok" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Tarih Bilgileri -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calendar me-2"></i>
+                        Tarih Bilgileri
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Oluşturma Tarihi</label>
+                        <p class="form-control-plaintext">
+                            <i class="bi bi-calendar-plus me-1"></i>
+                            {{ siparis.olusturma_tarihi|date:"d.m.Y" }}
+                            <small class="text-muted ms-2">
+                                <i class="bi bi-clock me-1"></i>
+                                {{ siparis.olusturma_tarihi|date:"H:i" }}
+                            </small>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Son Güncelleme</label>
+                        <p class="form-control-plaintext">
+                            <i class="bi bi-calendar-check me-1"></i>
+                            {{ siparis.guncelleme_tarihi|date:"d.m.Y" }}
+                            <small class="text-muted ms-2">
+                                <i class="bi bi-clock me-1"></i>
+                                {{ siparis.guncelleme_tarihi|date:"H:i" }}
+                            </small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hızlı İşlemler -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightning me-2"></i>
+                        Hızlı İşlemler
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'dashboard:siparis_duzenle' siparis.id %}" class="btn btn-warning">
+                            <i class="bi bi-pencil me-1"></i>
+                            Siparişi Düzenle
+                        </a>
+                        <a href="{% url 'dashboard:siparis_whatsapp' siparis.id %}" class="btn btn-success" target="_blank">
+                            <i class="bi bi-whatsapp me-1"></i>
+                            WhatsApp'ta Paylaş
+                        </a>
+                        <a href="{% url 'dashboard:siparis_sil' siparis.id %}" class="btn btn-danger" onclick="return confirm('Bu siparişi silmek istediğinizden emin misiniz?')">
+                            <i class="bi bi-trash me-1"></i>
+                            Siparişi Sil
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

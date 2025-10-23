@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Yeni Lastik Ekle - Mestakip{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Yeni Sipariş Ekle</h1>
+        <p class="text-muted mb-0">Yeni lastik siparişi oluşturun.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'dashboard:elements' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>
+            Geri Dön
+        </a>
+    </div>
+</div>
+
+<!-- Form Section -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Yeni Sipariş Ekle</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" id="yeniLastikForm">
+            {% csrf_token %}
+            <div class="row g-4">
+                <!-- Sol Kolon -->
+                <div class="col-lg-6">
+                    <div class="row g-3">
+                        <!-- CARI (FIRMA) -->
+                        <div class="col-12">
+                            <label for="{{ form.cari_firma.id_for_label }}" class="form-label">{{ form.cari_firma.label }}</label>
+                            {{ form.cari_firma }}
+                            {% if form.cari_firma.errors %}
+                                <div class="text-danger">{{ form.cari_firma.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- MARKA -->
+                        <div class="col-12">
+                            <label for="{{ form.marka.id_for_label }}" class="form-label">{{ form.marka.label }}</label>
+                            {{ form.marka }}
+                            {% if form.marka.errors %}
+                                <div class="text-danger">{{ form.marka.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- ÜRÜN (LASTIK MARKA MODEL) -->
+                        <div class="col-12">
+                            <label for="{{ form.urun.id_for_label }}" class="form-label">{{ form.urun.label }}</label>
+                            {{ form.urun }}
+                            {% if form.urun.errors %}
+                                <div class="text-danger">{{ form.urun.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- ADET -->
+                        <div class="col-6">
+                            <label for="{{ form.adet.id_for_label }}" class="form-label">{{ form.adet.label }}</label>
+                            {{ form.adet }}
+                            {% if form.adet.errors %}
+                                <div class="text-danger">{{ form.adet.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- BIRIM FIYAT -->
+                        <div class="col-6">
+                            <label for="{{ form.birim_fiyat.id_for_label }}" class="form-label">{{ form.birim_fiyat.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₺</span>
+                                {{ form.birim_fiyat }}
+                            </div>
+                            {% if form.birim_fiyat.errors %}
+                                <div class="text-danger">{{ form.birim_fiyat.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- DURUM -->
+                        <div class="col-12">
+                            <label for="{{ form.durum.id_for_label }}" class="form-label">{{ form.durum.label }}</label>
+                            {{ form.durum }}
+                            {% if form.durum.errors %}
+                                <div class="text-danger">{{ form.durum.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- AÇIKLAMA -->
+                        <div class="col-12">
+                            <label for="{{ form.aciklama.id_for_label }}" class="form-label">{{ form.aciklama.label }}</label>
+                            {{ form.aciklama }}
+                            {% if form.aciklama.errors %}
+                                <div class="text-danger">{{ form.aciklama.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sağ Kolon -->
+                <div class="col-lg-6">
+                    <div class="row g-3">
+                        <!-- MEVSIM -->
+                        <div class="col-12" id="mevsim-field">
+                            <label for="{{ form.mevsim.id_for_label }}" class="form-label">{{ form.mevsim.label }}</label>
+                            {{ form.mevsim }}
+                            {% if form.mevsim.errors %}
+                                <div class="text-danger">{{ form.mevsim.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- GRUP -->
+                        <div class="col-12">
+                            <label for="{{ form.grup.id_for_label }}" class="form-label">{{ form.grup.label }}</label>
+                            {{ form.grup }}
+                            {% if form.grup.errors %}
+                                <div class="text-danger">{{ form.grup.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- AMBAR -->
+                        <div class="col-12">
+                            <label for="{{ form.ambar.id_for_label }}" class="form-label">{{ form.ambar.label }}</label>
+                            {{ form.ambar }}
+                            {% if form.ambar.errors %}
+                                <div class="text-danger">{{ form.ambar.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- TOPLAM FIYAT -->
+                        <div class="col-12">
+                            <label for="{{ form.toplam_fiyat.id_for_label }}" class="form-label">{{ form.toplam_fiyat.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₺</span>
+                                {{ form.toplam_fiyat }}
+                            </div>
+                            {% if form.toplam_fiyat.errors %}
+                                <div class="text-danger">{{ form.toplam_fiyat.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- ÖDEME -->
+                        <div class="col-12">
+                            <label for="{{ form.odeme.id_for_label }}" class="form-label">{{ form.odeme.label }}</label>
+                            {{ form.odeme }}
+                            {% if form.odeme.errors %}
+                                <div class="text-danger">{{ form.odeme.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- ÖNE ÇIKAR -->
+                        <div class="col-12">
+                            <div class="form-check">
+                                {{ form.one_cikar }}
+                                <label class="form-check-label" for="{{ form.one_cikar.id_for_label }}">
+                                    {{ form.one_cikar.label }}
+                                </label>
+                            </div>
+                            {% if form.one_cikar.errors %}
+                                <div class="text-danger">{{ form.one_cikar.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-2"></i>
+                            Kaydet
+                        </button>
+                        <a href="{% url 'dashboard:elements' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-2"></i>
+                            İptal
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Yeni Lastik Ekle sayfası yüklendi');
+    
+    // Form elemanları
+    const adetInput = document.getElementById('id_adet');
+    const birimFiyatInput = document.getElementById('id_birim_fiyat');
+    const toplamFiyatInput = document.getElementById('id_toplam_fiyat');
+    const urunInput = document.getElementById('id_urun');
+    const oneCikarCheckbox = document.getElementById('id_one_cikar');
+    const grupSelect = document.getElementById('id_grup');
+    const mevsimField = document.getElementById('mevsim-field');
+    const form = document.getElementById('yeniLastikForm');
+    
+    // Debug: Elementleri kontrol et
+    console.log('Form elemanları:', {
+        adetInput, birimFiyatInput, toplamFiyatInput, urunInput, oneCikarCheckbox
+    });
+    
+    // Toplam fiyat hesaplama
+    function hesaplaToplamFiyat() {
+        const adet = parseFloat(adetInput.value) || 0;
+        const birimFiyat = parseFloat(birimFiyatInput.value) || 0;
+        const toplam = adet * birimFiyat;
+        toplamFiyatInput.value = toplam.toFixed(2);
+        console.log('Hesaplama:', adet, 'x', birimFiyat, '=', toplam);
+    }
+    
+    // Birim fiyat hesaplama (toplam fiyat ve adet'ten)
+    function hesaplaBirimFiyat() {
+        const adet = parseFloat(adetInput.value) || 0;
+        const toplam = parseFloat(toplamFiyatInput.value) || 0;
+        if (adet > 0) {
+            const birimFiyat = toplam / adet;
+            birimFiyatInput.value = birimFiyat.toFixed(2);
+            console.log('Birim Fiyat Hesaplama:', toplam, '/', adet, '=', birimFiyat);
+        }
+    }
+    
+    // Mevsim alanını kontrol et
+    function toggleMevsimField() {
+        const selectedGrup = grupSelect.value;
+        if (selectedGrup === 'aku' || selectedGrup === 'jant') {
+            // Akü veya Jant seçildiğinde mevsim alanını gizle
+            mevsimField.style.display = 'none';
+            // Mevsim değerini temizle
+            document.getElementById('id_mevsim').value = '';
+            console.log('Mevsim alanı gizlendi - Grup:', selectedGrup);
+        } else {
+            // Diğer gruplar için mevsim alanını göster
+            mevsimField.style.display = 'block';
+            console.log('Mevsim alanı gösterildi - Grup:', selectedGrup);
+        }
+    }
+    
+    // Adet veya birim fiyat değiştiğinde toplam fiyatı hesapla
+    adetInput.addEventListener('input', function() {
+        hesaplaToplamFiyat();
+        hesaplaBirimFiyat();
+    });
+    birimFiyatInput.addEventListener('input', hesaplaToplamFiyat);
+    
+    // Toplam fiyat değiştiğinde birim fiyatı hesapla
+    toplamFiyatInput.addEventListener('input', hesaplaBirimFiyat);
+    
+    // Grup seçimi değiştiğinde mevsim alanını kontrol et
+    grupSelect.addEventListener('change', toggleMevsimField);
+    
+    // Öne çıkar checkbox değişikliği
+    oneCikarCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            // Ürün input alanını kırmızı border ile vurgula
+            urunInput.style.borderColor = '#dc3545';
+            urunInput.style.borderWidth = '2px';
+            urunInput.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
+            console.log('Öne çıkar aktif - Ürün alanı vurgulandı');
+        } else {
+            // Normal görünüme döndür
+            urunInput.style.borderColor = '';
+            urunInput.style.borderWidth = '';
+            urunInput.style.boxShadow = '';
+            console.log('Öne çıkar pasif - Normal görünüm');
+        }
+    });
+    
+    // Form gönderimi - Django form'unun normal gönderimini kullan
+    form.addEventListener('submit', function(e) {
+        console.log('Form gönderiliyor');
+        
+        // Django form'unun normal gönderimine izin ver
+        // e.preventDefault() kaldırıldı
+    });
+    
+    // Sayfa yüklendiğinde toplam fiyatı hesapla
+    hesaplaToplamFiyat();
+    
+    // Sayfa yüklendiğinde mevsim alanını kontrol et
+    toggleMevsimField();
+});
+</script>
+
+<style>
+/* Öne çıkar aktif olduğunda özel stil */
+.form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Öne çıkar checkbox özel stili */
+.form-check-input:checked {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* Form genel stilleri */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+/* Ebat vurgulama stilleri */
+.ebat-highlight {
+    color: #dc3545 !important;
+    font-weight: bold !important;
+    background-color: rgba(220, 53, 69, 0.1) !important;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+/* Öne çıkar aktif durumu */
+.one-cikar-active {
+    border-color: #dc3545 !important;
+    border-width: 2px !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+/* Ebat pattern vurgulama */
+.ebat-pattern {
+    color: #dc3545;
+    font-weight: bold;
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+</style>
+{% endblock %}

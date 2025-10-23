@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">{{ page_title }}</h1>
+            <p class="text-muted mb-0">Sipariş bilgilerini düzenleyin</p>
+        </div>
+        <div>
+            <a href="{% url 'dashboard:elements' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                Geri Dön
+            </a>
+            <a href="{% url 'dashboard:siparis_detay' siparis.id %}" class="btn btn-info">
+                <i class="bi bi-eye me-1"></i>
+                Detayları Gör
+            </a>
+        </div>
+    </div>
+
+    <!-- Düzenleme Formu -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pencil me-2"></i>
+                        Sipariş Bilgilerini Düzenle
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="siparisForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.cari_firma.id_for_label }}" class="form-label">CARI (FIRMA) <span class="text-danger">*</span></label>
+                                    {{ form.cari_firma }}
+                                    {% if form.cari_firma.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.cari_firma.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.marka.id_for_label }}" class="form-label">MARKA <span class="text-danger">*</span></label>
+                                    {{ form.marka }}
+                                    {% if form.marka.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.marka.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.urun.id_for_label }}" class="form-label">ÜRÜN (LASTIK MARKA MODEL) <span class="text-danger">*</span></label>
+                                    {{ form.urun }}
+                                    {% if form.urun.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.urun.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.adet.id_for_label }}" class="form-label">ADET <span class="text-danger">*</span></label>
+                                    {{ form.adet }}
+                                    {% if form.adet.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.adet.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.birim_fiyat.id_for_label }}" class="form-label">BİRİM FİYAT <span class="text-danger">*</span></label>
+                                    {{ form.birim_fiyat }}
+                                    {% if form.birim_fiyat.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.birim_fiyat.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.durum.id_for_label }}" class="form-label">DURUM</label>
+                                    {{ form.durum }}
+                                    {% if form.durum.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.durum.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.one_cikar.id_for_label }}" class="form-label">ÖNE ÇIKAR</label>
+                                    <div class="form-check">
+                                        {{ form.one_cikar }}
+                                        <label class="form-check-label" for="{{ form.one_cikar.id_for_label }}">
+                                            Bu siparişi öne çıkar
+                                        </label>
+                                    </div>
+                                    {% if form.one_cikar.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.one_cikar.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.aciklama.id_for_label }}" class="form-label">AÇIKLAMA</label>
+                                    {{ form.aciklama }}
+                                    {% if form.aciklama.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.aciklama.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.mevsim.id_for_label }}" class="form-label">MEVSİM <span class="text-danger">*</span></label>
+                                    {{ form.mevsim }}
+                                    {% if form.mevsim.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.mevsim.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.grup.id_for_label }}" class="form-label">GRUP <span class="text-danger">*</span></label>
+                                    {{ form.grup }}
+                                    {% if form.grup.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.grup.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.ambar.id_for_label }}" class="form-label">AMBAR <span class="text-danger">*</span></label>
+                                    {{ form.ambar }}
+                                    {% if form.ambar.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.ambar.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.odeme.id_for_label }}" class="form-label">ÖDEME <span class="text-danger">*</span></label>
+                                    {{ form.odeme }}
+                                    {% if form.odeme.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.odeme.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.toplam_fiyat.id_for_label }}" class="form-label">TOPLAM FİYAT</label>
+                                    {{ form.toplam_fiyat }}
+                                    {% if form.toplam_fiyat.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.toplam_fiyat.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.sms_durum.id_for_label }}" class="form-label">SMS DURUMU</label>
+                                    {{ form.sms_durum }}
+                                    {% if form.sms_durum.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.sms_durum.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-lg me-1"></i>
+                                Kaydet
+                            </button>
+                            <a href="{% url 'dashboard:elements' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-lg me-1"></i>
+                                İptal
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Mevcut Sipariş Bilgileri -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Mevcut Bilgiler
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Sipariş No</label>
+                        <p class="form-control-plaintext">#{{ siparis.id }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Oluşturma Tarihi</label>
+                        <p class="form-control-plaintext">
+                            <i class="bi bi-calendar-plus me-1"></i>
+                            {{ siparis.olusturma_tarihi|date:"d.m.Y" }}
+                            <small class="text-muted ms-2">
+                                <i class="bi bi-clock me-1"></i>
+                                {{ siparis.olusturma_tarihi|date:"H:i" }}
+                            </small>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Son Güncelleme</label>
+                        <p class="form-control-plaintext">
+                            <i class="bi bi-calendar-check me-1"></i>
+                            {{ siparis.guncelleme_tarihi|date:"d.m.Y" }}
+                            <small class="text-muted ms-2">
+                                <i class="bi bi-clock me-1"></i>
+                                {{ siparis.guncelleme_tarihi|date:"H:i" }}
+                            </small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Sipariş düzenleme sayfası yüklendi');
+    
+    // Form elemanlarını al
+    const adetInput = document.getElementById('id_adet');
+    const birimFiyatInput = document.getElementById('id_birim_fiyat');
+    const toplamFiyatInput = document.getElementById('id_toplam_fiyat');
+    const urunInput = document.getElementById('id_urun');
+    const oneCikarCheckbox = document.getElementById('id_one_cikar');
+    const form = document.getElementById('siparisForm');
+    
+    console.log('Form elemanları:', {
+        adetInput, birimFiyatInput, toplamFiyatInput, urunInput, oneCikarCheckbox
+    });
+    
+    // Toplam fiyat hesaplama fonksiyonu
+    function hesaplaToplamFiyat() {
+        const adet = parseFloat(adetInput.value) || 0;
+        const birimFiyat = parseFloat(birimFiyatInput.value) || 0;
+        const toplam = adet * birimFiyat;
+        toplamFiyatInput.value = toplam.toFixed(2);
+        console.log(`Toplam hesaplandı: ${adet} x ${birimFiyat} = ${toplam}`);
+    }
+    
+    // Birim fiyat hesaplama fonksiyonu
+    function hesaplaBirimFiyat() {
+        const adet = parseFloat(adetInput.value) || 0;
+        const toplamFiyat = parseFloat(toplamFiyatInput.value) || 0;
+        if (adet > 0) {
+            const birimFiyat = toplamFiyat / adet;
+            birimFiyatInput.value = birimFiyat.toFixed(2);
+            console.log(`Birim fiyat hesaplandı: ${toplamFiyat} / ${adet} = ${birimFiyat}`);
+        }
+    }
+    
+    // Event listener'lar
+    if (adetInput) {
+        adetInput.addEventListener('input', hesaplaToplamFiyat);
+    }
+    
+    if (birimFiyatInput) {
+        birimFiyatInput.addEventListener('input', hesaplaToplamFiyat);
+    }
+    
+    if (toplamFiyatInput) {
+        toplamFiyatInput.addEventListener('input', hesaplaBirimFiyat);
+    }
+    
+    // Öne çıkar checkbox kontrolü
+    if (oneCikarCheckbox && urunInput) {
+        oneCikarCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                urunInput.style.borderColor = 'red';
+                urunInput.style.borderWidth = '2px';
+                
+                // Ebat kısmını kırmızı yap
+                highlightEbatInProduct();
+                console.log('Öne çıkar aktif - kırmızı border ve ebat vurgulandı');
+            } else {
+                urunInput.style.borderColor = '';
+                urunInput.style.borderWidth = '';
+                
+                // Ebat vurgusunu kaldır
+                removeEbatHighlight();
+                console.log('Öne çıkar pasif - normal border');
+            }
+        });
+        
+        // Sayfa yüklendiğinde kontrol et
+        if (oneCikarCheckbox.checked) {
+            urunInput.style.borderColor = 'red';
+            urunInput.style.borderWidth = '2px';
+            highlightEbatInProduct();
+        }
+    }
+    
+    // Ebat kısmını kırmızı yapma fonksiyonu
+    function highlightEbatInProduct() {
+        const productValue = urunInput.value;
+        if (productValue) {
+            // Ebat pattern'ini bul (örnek: 205/55R16, 225/45R17, vb.)
+            const ebatPattern = /(\d{3}\/\d{2}R\d{2})/g;
+            if (productValue.match(ebatPattern)) {
+                urunInput.style.color = '#dc3545';
+                urunInput.style.fontWeight = 'bold';
+                urunInput.style.backgroundColor = 'rgba(220, 53, 69, 0.05)';
+                console.log('Ebat bulundu ve kırmızı yapıldı:', productValue.match(ebatPattern));
+            }
+        }
+        
+        // Input değiştiğinde de kontrol et
+        urunInput.addEventListener('input', function() {
+            const currentValue = this.value;
+            const ebatPattern = /(\d{3}\/\d{2}R\d{2})/g;
+            if (currentValue.match(ebatPattern)) {
+                this.style.color = '#dc3545';
+                this.style.fontWeight = 'bold';
+                this.style.backgroundColor = 'rgba(220, 53, 69, 0.05)';
+            } else {
+                this.style.color = '';
+                this.style.fontWeight = '';
+                this.style.backgroundColor = '';
+            }
+        });
+    }
+    
+    // Ebat vurgusunu kaldırma fonksiyonu
+    function removeEbatHighlight() {
+        urunInput.style.color = '';
+        urunInput.style.fontWeight = '';
+        urunInput.style.backgroundColor = '';
+    }
+    
+    // Form gönderiminde hesaplama yap
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            hesaplaToplamFiyat();
+            console.log('Form gönderiliyor...');
+        });
+    }
+});
+</script>
+{% endblock %}

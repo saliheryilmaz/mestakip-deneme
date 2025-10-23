@@ -1,0 +1,533 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Mestakip{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Dashboard</h1>
+        <p class="text-muted mb-0">Welcome back! Here's what's happening.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-2"></i>
+            New Item
+        </button>
+        <button type="button" class="btn btn-outline-secondary" 
+                data-bs-toggle="tooltip" 
+                title="Refresh data">
+            <i class="bi bi-arrow-clockwise icon-hover"></i>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" 
+                data-bs-toggle="tooltip" 
+                title="Export data">
+            <i class="bi bi-download icon-hover"></i>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" 
+                data-bs-toggle="tooltip" 
+                title="Settings">
+            <i class="bi bi-gear icon-hover"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-lg-6">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="stats-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-people"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-0 text-muted">Toplam Sipariş</h6>
+                        <h3 class="mb-0">{{ stats.total_users|floatformat:0 }}</h3>
+                        <small class="text-success">
+                            <i class="bi bi-arrow-up"></i> Aktif
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="stats-icon bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-0 text-muted">Toplam Ciro</h6>
+                        <h3 class="mb-0">₺{{ stats.revenue|floatformat:0 }}</h3>
+                        <small class="text-success">
+                            <i class="bi bi-arrow-up"></i> Toplam
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="stats-icon bg-warning bg-opacity-10 text-warning">
+                            <i class="bi bi-bag-check"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-0 text-muted">Kontrol Edilen</h6>
+                        <h3 class="mb-0">{{ stats.orders|floatformat:0 }}</h3>
+                        <small class="text-success">
+                            <i class="bi bi-arrow-up"></i> Kontrol
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="stats-icon bg-info bg-opacity-10 text-info">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-0 text-muted">Toplam Adet</h6>
+                        <h3 class="mb-0">{{ stats.avg_response|floatformat:0 }}</h3>
+                        <small class="text-success">
+                            <i class="bi bi-arrow-up"></i> Adet
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Section -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Gelire Genel Bakış</h5>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary active" data-chart-period="7d">7D</button>
+                    <button type="button" class="btn btn-outline-primary" data-chart-period="30d">30D</button>
+                    <button type="button" class="btn btn-outline-primary" data-chart-period="90d">90D</button>
+                    <button type="button" class="btn btn-outline-primary" data-chart-period="1y">1Y</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="revenueChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Additional Charts Row -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Lastik Satış Analizi (3D)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="tireSalesChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Lastik Marka Dağılımı (Toplam Adet)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="orderStatusChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Widgets Row -->
+<div class="row g-4 mb-4">
+    <!-- Son Eklenen İşlemler -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Son Eklenen İşlemler</h5>
+                <div class="d-flex gap-2">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'dashboard:elements' %}">Tümünü Gör</a>
+                    <a class="btn btn-sm btn-success" href="{% url 'dashboard:yeni_lastik' %}">Yeni Ekle</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cari</th>
+                                <th>Ürün</th>
+                                <th>Marka</th>
+                                <th>Grup</th>
+                                <th>Mevsim</th>
+                                <th class="text-end">Adet</th>
+                                <th class="text-end">Birim Fiyat</th>
+                                <th class="text-end">Toplam</th>
+                                <th>Durum</th>
+                                <th>Ambar</th>
+                                <th class="text-end">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in son_islemler %}
+                            <tr>
+                                <td>{{ s.cari_firma }}</td>
+                                <td class="text-truncate" style="max-width:200px">{{ s.urun }}</td>
+                                <td>{{ s.marka }}</td>
+                                <td>{{ s.get_grup_display }}</td>
+                                <td>{{ s.get_mevsim_display }}</td>
+                                <td class="text-end">{{ s.adet }}</td>
+                                <td class="text-end">₺{{ s.birim_fiyat|floatformat:2 }}</td>
+                                <td class="text-end">₺{{ s.toplam_fiyat|floatformat:2 }}</td>
+                                <td><span class="badge bg-{{ s.get_durum_display_color }}">{{ s.get_durum_display }}</span></td>
+                                <td><span class="badge bg-secondary">{{ s.get_ambar_display }}</span></td>
+                                <td class="text-end">
+                                    <a class="btn btn-sm btn-outline-primary" href="{% url 'dashboard:siparis_detay' s.id %}">Detay</a>
+                                    <a class="btn btn-sm btn-outline-warning" href="{% url 'dashboard:siparis_duzenle' s.id %}">Düzenle</a>
+                                    <a class="btn btn-sm btn-outline-success" href="{% url 'dashboard:siparis_whatsapp' s.id %}">WhatsApp</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="11" class="text-center text-muted py-4">Kayıt bulunamadı.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Sales by Location -->
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Sales by Location</h5>
+            </div>
+            <div class="card-body">
+                <div id="salesByLocationChart" style="min-height: 400px; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard loaded');
+    
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart');
+    if (revenueCtx) {
+        const monthlyRevenue = JSON.parse('{{ monthly_revenue|escapejs }}');
+        const monthlyLabels = JSON.parse('{{ monthly_labels|escapejs }}');
+        
+        const revenueChart = new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: monthlyLabels,
+                datasets: [{
+                    label: 'Ciro (₺)',
+                    data: monthlyRevenue,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Lastik Satış Analizi Chart (3D Bar Chart)
+    const tireSalesCtx = document.getElementById('tireSalesChart');
+    if (tireSalesCtx) {
+        const tireSalesData = JSON.parse('{{ tire_sales_data|escapejs }}');
+        
+        const tireSalesChart = new Chart(tireSalesCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Yaz', 'Kış', '4 Mevsim'],
+                datasets: [{
+                    label: 'Binek',
+                    data: [
+                        tireSalesData.yaz.binek,
+                        tireSalesData.kis.binek,
+                        tireSalesData.dort_mevsim.binek
+                    ],
+                    backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                    borderColor: '#6366f1',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                }, {
+                    label: 'Ticari',
+                    data: [
+                        tireSalesData.yaz.ticari,
+                        tireSalesData.kis.ticari,
+                        tireSalesData.dort_mevsim.ticari
+                    ],
+                    backgroundColor: 'rgba(236, 72, 153, 0.8)',
+                    borderColor: '#ec4899',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Lastik Satış Analizi - Mevsim ve Araç Tipi',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const vehicleType = context.dataset.label;
+                                const value = context.parsed.y;
+                                return `${vehicleType}: ${value} adet`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 16,
+                        ticks: {
+                            stepSize: 2,
+                            callback: function(value) {
+                                return value;
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Satılan Adet',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)',
+                            drawBorder: false
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Mevsim',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+    }
+
+    // Lastik Marka Dağılımı Chart (Doughnut)
+    const orderStatusCtx = document.getElementById('orderStatusChart');
+    if (orderStatusCtx) {
+        const brandChartData = JSON.parse('{{ brand_chart_data|escapejs }}');
+        
+        const brandChart = new Chart(orderStatusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: brandChartData.labels,
+                datasets: [{
+                    data: brandChartData.data,
+                    backgroundColor: brandChartData.colors,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    const dataset = data.datasets[0];
+                                    const total = dataset.data.reduce((a, b) => a + b, 0);
+                                    
+                                    return data.labels.map((label, i) => {
+                                        const value = dataset.data[i];
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                        
+                                        return {
+                                            text: `${label}: ${value} (${percentage}%)`,
+                                            fillStyle: dataset.backgroundColor[i],
+                                            strokeStyle: dataset.backgroundColor[i],
+                                            lineWidth: 0,
+                                            pointStyle: 'circle',
+                                            hidden: false,
+                                            index: i
+                                        };
+                                    });
+                                }
+                                return [];
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${label}: ${value} adet (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    // Sales by Location Chart (Bar Chart)
+    const salesByLocationCtx = document.getElementById('salesByLocationChart');
+    if (salesByLocationCtx) {
+        const citySalesData = JSON.parse('{{ city_sales_data|escapejs }}');
+        
+        const salesByLocationChart = new Chart(salesByLocationCtx, {
+            type: 'bar',
+            data: {
+                labels: citySalesData.labels,
+                datasets: [{
+                    label: 'Satış (₺)',
+                    data: citySalesData.data,
+                    backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                    borderColor: '#6366f1',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart period buttons functionality
+    const periodButtons = document.querySelectorAll('[data-chart-period]');
+    periodButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            periodButtons.forEach(btn => btn.classList.remove('active'));
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Here you would typically update the chart data based on the selected period
+            console.log('Selected period:', this.dataset.chartPeriod);
+        });
+    });
+});
+</script>
+{% endblock %}

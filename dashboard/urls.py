@@ -1,0 +1,38 @@
+from django.urls import path
+from . import views
+
+app_name = 'dashboard'
+
+urlpatterns = [
+    path('', views.index, name='index'),
+    path('analytics/', views.analytics, name='analytics'),
+    path('users/', views.users, name='users'),
+    path('products/', views.products, name='products'),
+    path('orders/', views.orders, name='orders'),
+    path('forms/', views.forms, name='forms'),
+    path('elements/', views.elements, name='elements'),
+    path('elements/buttons/', views.elements_buttons, name='elements_buttons'),
+    path('elements/alerts/', views.elements_alerts, name='elements_alerts'),
+    path('elements/badges/', views.elements_badges, name='elements_badges'),
+    path('elements/cards/', views.elements_cards, name='elements_cards'),
+    path('elements/modals/', views.elements_modals, name='elements_modals'),
+    path('elements/forms/', views.elements_forms, name='elements_forms'),
+    path('elements/tables/', views.elements_tables, name='elements_tables'),
+    path('yeni-lastik/', views.yeni_lastik, name='yeni_lastik'),
+    path('siparis/<int:siparis_id>/detay/', views.siparis_detay, name='siparis_detay'),
+    path('siparis/<int:siparis_id>/duzenle/', views.siparis_duzenle, name='siparis_duzenle'),
+    path('siparis/<int:siparis_id>/sil/', views.siparis_sil, name='siparis_sil'),
+    path('siparis/<int:siparis_id>/whatsapp/', views.siparis_whatsapp, name='siparis_whatsapp'),
+    path('export-excel/', views.export_excel, name='export_excel'),
+    path('export-cancelled-excel/', views.export_cancelled_excel, name='export_cancelled_excel'),
+    path('export-checked-excel/', views.export_checked_excel, name='export_checked_excel'),
+    path('reports/', views.reports, name='reports'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('messages/', views.messages_view, name='messages'),
+    path('calendar/', views.calendar, name='calendar'),
+    path('files/', views.files, name='files'),
+    path('settings/', views.settings, name='settings'),
+    path('security/', views.security, name='security'),
+    path('help/', views.help, name='help'),
+]
