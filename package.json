@@ -13,6 +13,10 @@
     "url": "https://github.com/puikinsh/Bootstrap-Admin-Template/issues"
   },
   "license": "MIT",
+  "engines": {
+    "node": ">=20.19.0",
+    "npm": ">=10.0.0"
+  },
   "keywords": [
     "bootstrap",
     "vite",

@@ -138,9 +138,14 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
-    BASE_DIR / 'src-modern/assets',
-    BASE_DIR / 'dist-modern/assets',
 ]
+
+# Add dist-modern/assets only if it exists (after build)
+if (BASE_DIR / 'dist-modern/assets').exists():
+    STATICFILES_DIRS.append(BASE_DIR / 'dist-modern/assets')
+else:
+    # Fallback to src-modern/assets if build didn't run
+    STATICFILES_DIRS.append(BASE_DIR / 'src-modern/assets')
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # WhiteNoise configuration
