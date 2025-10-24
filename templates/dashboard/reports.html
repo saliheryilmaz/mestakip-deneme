@@ -97,7 +97,7 @@
                         <div class="card border-{{ grup.grup|default:'secondary' }}">
                             <div class="card-body text-center">
                                 <h6 class="card-title text-uppercase">{{ grup.grup|default:'Bilinmeyen' }}</h6>
-                                <h4 class="text-danger">{{ grup.count }}</h4>
+                                <h4 class="text-danger">{{ grup.total_adet }}</h4>
                                 <small class="text-muted">₺{{ grup.total_amount|floatformat:2 }}</small>
                             </div>
                         </div>

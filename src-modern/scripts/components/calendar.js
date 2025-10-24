@@ -27,7 +27,7 @@ document.addEventListener('alpine:init', () => {
     ],
 
     init() {
-      this.loadSampleEvents();
+      this.loadEvents();
       this.selectedDate = new Date();
       this.selectedDay = new Date().toISOString().split('T')[0];
       
@@ -36,109 +36,23 @@ document.addEventListener('alpine:init', () => {
       this.miniCalendarDate = new Date();
     },
 
-    loadSampleEvents() {
-      const today = new Date();
-      const currentYear = today.getFullYear();
-      const currentMonth = today.getMonth();
-      const currentDay = today.getDate();
-      
-      // Get current month name for display
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const currentMonthName = monthNames[currentMonth];
-      
-      // Generate future events for the current month
-      const eventTemplates = [
-        { title: 'Team Meeting', type: 'meeting', time: '10:00', description: 'Weekly team sync and project updates' },
-        { title: 'Product Launch', type: 'event', time: '14:00', description: 'Launch event for new product line' },
-        { title: 'Stand-up', type: 'meeting', time: '09:00', description: 'Daily team stand-up meeting' },
-        { title: 'Client Presentation', type: 'task', time: '11:30', description: 'Present quarterly results to client' },
-        { title: 'Payment Due', type: 'reminder', time: '09:00', description: 'Monthly subscription payment reminder' },
-        { title: 'Workshop', type: 'event', time: '14:00', description: 'Design thinking workshop' },
-        { title: 'Project Deadline', type: 'deadline', time: '17:00', description: 'Final submission for Q1 project' },
-        { title: 'Team Lunch', type: 'event', time: '12:00', description: 'Monthly team lunch gathering' },
-        { title: 'Board Meeting', type: 'meeting', time: '15:00', description: 'Monthly board meeting and strategy review' },
-        { title: 'Training Session', type: 'event', time: '13:00', description: 'Employee training on new software tools' },
-        { title: 'One-on-One', type: 'meeting', time: '15:00', description: 'Manager check-in meeting' },
-        { title: 'Code Review', type: 'task', time: '16:00', description: 'Review new feature implementations' },
-        { title: 'Doctor Appointment', type: 'reminder', time: '14:30', description: 'Annual health checkup appointment' },
-        { title: 'Release Planning', type: 'meeting', time: '10:00', description: 'Plan next release cycle' },
-        { title: 'Demo Day', type: 'event', time: '14:00', description: 'Quarterly product demo' },
-        { title: 'Conference Call', type: 'meeting', time: '10:00', description: 'International team coordination call' },
-        { title: 'Sprint Review', type: 'meeting', time: '16:00', description: 'Review sprint deliverables' },
-        { title: 'Budget Review', type: 'task', time: '11:00', description: 'Quarterly budget assessment' },
-        { title: 'All Hands', type: 'meeting', time: '15:00', description: 'Company-wide monthly meeting' }
-      ];
-      
-      // Get the number of days in current month
-      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-      
-      // Generate events for future dates in current month
-      this.events = [];
-      let eventIndex = 0;
-      
-      // Create events distributed across remaining days of the month
-      for (let day = currentDay; day <= daysInMonth && eventIndex < eventTemplates.length; day++) {
-        // Skip some days to avoid too many events
-        if ((day - currentDay) % 2 === 0 || day === currentDay || day === daysInMonth) {
-          const template = eventTemplates[eventIndex];
-          const eventDate = new Date(currentYear, currentMonth, day);
-          const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          
-          // Create time string based on day
-          let timeStr, dateStr;
-          if (day === currentDay) {
-            timeStr = this.formatTime(template.time);
-            dateStr = 'Today';
-          } else if (day === currentDay + 1) {
-            timeStr = this.formatTime(template.time);
-            dateStr = 'Tomorrow';
-          } else {
-            timeStr = this.formatTime(template.time);
-            dateStr = `${currentMonthName} ${day}`;
-          }
-          
-          this.events.push({
-            id: eventIndex + 1,
-            title: template.title,
-            type: template.type,
-            time: template.time,
-            timeStr: timeStr,
-            dateStr: dateStr,
-            description: template.description,
-            date: dateString,
-            dateObj: eventDate,
-            read: Math.random() > 0.3 // Most events are read
-          });
-          
-          eventIndex++;
+    async loadEvents() {
+      try {
+        const response = await fetch('/dashboard/api/events/');
+        const data = await response.json();
+        
+        if (data.success) {
+          this.events = data.events.map(event => ({
+            ...event,
+            dateObj: new Date(event.date)
+          }));
+        } else {
+          console.error('Etkinlikler yüklenirken hata:', data.error);
+          this.events = [];
         }
-      }
-      
-      // Add some events for next month too
-      const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
-      const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
-      const nextMonthName = monthNames[nextMonth];
-      
-      for (let day = 1; day <= 10 && eventIndex < eventTemplates.length; day += 2) {
-        const template = eventTemplates[eventIndex];
-        const eventDate = new Date(nextYear, nextMonth, day);
-        const dateString = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        
-        this.events.push({
-          id: eventIndex + 1,
-          title: template.title,
-          type: template.type,
-          time: template.time,
-          timeStr: this.formatTime(template.time),
-          dateStr: `${nextMonthName} ${day}`,
-          description: template.description,
-          date: dateString,
-          dateObj: eventDate,
-          read: Math.random() > 0.3
-        });
-        
-        eventIndex++;
+      } catch (error) {
+        console.error('API hatası:', error);
+        this.events = [];
       }
     },
 
@@ -545,65 +459,103 @@ document.addEventListener('alpine:init', () => {
       this.eventData.time = '09:00';
     },
 
-    submitEvent() {
+    async submitEvent() {
       if (!this.eventData.title.trim()) {
-        this.showValidationError('Please enter an event title');
+        this.showValidationError('Lütfen etkinlik başlığı girin');
         return;
       }
 
       if (!this.eventData.date) {
-        this.showValidationError('Please select a date');
+        this.showValidationError('Lütfen bir tarih seçin');
         return;
       }
 
       if (!this.eventData.time) {
-        this.showValidationError('Please select a time');
+        this.showValidationError('Lütfen bir saat seçin');
         return;
       }
 
-      // Format the event data for display
-      const formattedEvent = {
-        ...this.eventData,
-        formattedDate: new Date(this.eventData.date).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }),
-        formattedTime: new Date(`2000-01-01T${this.eventData.time}`).toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        })
-      };
+      try {
+        // CSRF token'ı al
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                         document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-      console.log('Creating event:', formattedEvent);
-      
-      // Show success message with event details
-      if (typeof Swal !== 'undefined') {
-        Swal.fire({
-          title: 'Event Created Successfully!',
-          html: `
-            <div class="text-start">
-              <p><strong>📅 Event:</strong> ${formattedEvent.title}</p>
-              <p><strong>📋 Type:</strong> ${formattedEvent.type.charAt(0).toUpperCase() + formattedEvent.type.slice(1)}</p>
-              <p><strong>📆 Date:</strong> ${formattedEvent.formattedDate}</p>
-              <p><strong>🕐 Time:</strong> ${formattedEvent.formattedTime}</p>
-              ${formattedEvent.description ? `<p><strong>📝 Description:</strong> ${formattedEvent.description}</p>` : ''}
-              ${formattedEvent.location ? `<p><strong>📍 Location:</strong> ${formattedEvent.location}</p>` : ''}
-              <p><strong>⏱️ Duration:</strong> ${this.getDurationLabel(formattedEvent.duration)}</p>
-            </div>
-          `,
-          icon: 'success',
-          confirmButtonText: 'Awesome!',
-          confirmButtonColor: 'var(--bs-primary)'
+        const response = await fetch('/dashboard/api/events/create/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+          },
+          body: JSON.stringify(this.eventData)
         });
-      } else {
-        alert(`Event "${this.eventData.title}" created successfully!`);
-      }
 
-      // Close modal and reset form
-      this.closeModal();
+        const data = await response.json();
+
+        if (data.success) {
+          // Format the event data for display
+          const formattedEvent = {
+            ...this.eventData,
+            formattedDate: new Date(this.eventData.date).toLocaleDateString('tr-TR', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            formattedTime: new Date(`2000-01-01T${this.eventData.time}`).toLocaleTimeString('tr-TR', {
+              hour: 'numeric',
+              minute: '2-digit'
+            })
+          };
+
+          // Show success message with event details
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              title: 'Etkinlik Başarıyla Oluşturuldu!',
+              html: `
+                <div class="text-start">
+                  <p><strong>📅 Etkinlik:</strong> ${formattedEvent.title}</p>
+                  <p><strong>📋 Tür:</strong> ${this.getTypeDisplayName(formattedEvent.type)}</p>
+                  <p><strong>📆 Tarih:</strong> ${formattedEvent.formattedDate}</p>
+                  <p><strong>🕐 Saat:</strong> ${formattedEvent.formattedTime}</p>
+                  ${formattedEvent.description ? `<p><strong>📝 Açıklama:</strong> ${formattedEvent.description}</p>` : ''}
+                  ${formattedEvent.location ? `<p><strong>📍 Konum:</strong> ${formattedEvent.location}</p>` : ''}
+                  <p><strong>⏱️ Süre:</strong> ${this.getDurationLabel(formattedEvent.duration)}</p>
+                </div>
+              `,
+              icon: 'success',
+              confirmButtonText: 'Harika!',
+              confirmButtonColor: 'var(--bs-primary)'
+            });
+          } else {
+            alert(`Etkinlik "${this.eventData.title}" başarıyla oluşturuldu!`);
+          }
+
+          // Etkinlikleri yeniden yükle
+          const calendarComponent = Alpine.$data(document.querySelector('[x-data*="calendarComponent"]'));
+          if (calendarComponent) {
+            await calendarComponent.loadEvents();
+          }
+
+          // Close modal and reset form
+          this.closeModal();
+        } else {
+          this.showValidationError(data.error || 'Etkinlik oluşturulurken bir hata oluştu');
+        }
+      } catch (error) {
+        console.error('Etkinlik oluşturma hatası:', error);
+        this.showValidationError('Sunucu ile iletişim kurulurken bir hata oluştu');
+      }
+    },
+
+    getTypeDisplayName(type) {
+      const typeNames = {
+        'event': 'Etkinlik',
+        'meeting': 'Toplantı',
+        'task': 'Görev',
+        'reminder': 'Hatırlatıcı',
+        'deadline': 'Son Tarih'
+      };
+      return typeNames[type] || type;
     },
 
     getDurationLabel(duration) {

@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import json
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from .models import Siparis, UserProfile
+from .models import Siparis, UserProfile, Event
 from .forms import SiparisForm
 
 def index(request):
@@ -61,8 +61,8 @@ def index(request):
         'colors': brand_colors[:len(brand_labels)]
     }
     
-    # Son eklenen işlemler (kontrol edilen siparişlerden son 5 kayıt)
-    son_islemler = kontrol_siparisler.order_by('-olusturma_tarihi')[:5]
+    # Son eklenen işlemler (tüm siparişlerden son 5 kayıt)
+    son_islemler = Siparis.objects.all().order_by('-olusturma_tarihi')[:5]
     
     # Gerçek istatistikler - tüm siparişlerden
     toplam_siparis = Siparis.objects.count()
@@ -87,42 +87,37 @@ def index(request):
         monthly_revenue.append(float(monthly_total))
         monthly_labels.append(start_date.strftime('%b'))
     
-    # Şehir bazında satış verileri (cari_firma'dan şehir çıkarımı)
-    city_sales = (
+    # En çok alım yaptığımız cariler (fiyat bazında) - Yeni Sipariş Ekle'den oluşturulan veriler
+    # Sadece kontrol edilmiş siparişlerden en çok alım yapan cariler
+    top_customers = (
         Siparis.objects
+        .filter(durum='kontrol')  # Sadece kontrol edilmiş siparişler
         .values('cari_firma')
-        .annotate(total_sales=Sum('toplam_fiyat'))
-        .order_by('-total_sales')[:8]
+        .annotate(
+            total_purchase=Sum('toplam_fiyat'),
+            siparis_sayisi=Count('id')
+        )
+        .order_by('-total_purchase')[:8]
     )
     
-    city_labels = []
-    city_data = []
-    for city in city_sales:
-        # Basit şehir çıkarımı (firma adından)
-        firma = city['cari_firma']
-        if 'istanbul' in firma.lower():
-            city_name = 'İstanbul'
-        elif 'ankara' in firma.lower():
-            city_name = 'Ankara'
-        elif 'izmir' in firma.lower():
-            city_name = 'İzmir'
-        elif 'bursa' in firma.lower():
-            city_name = 'Bursa'
-        elif 'antalya' in firma.lower():
-            city_name = 'Antalya'
-        elif 'adana' in firma.lower():
-            city_name = 'Adana'
-        elif 'konya' in firma.lower():
-            city_name = 'Konya'
-        else:
-            city_name = 'Diğer'
+    customer_labels = []
+    customer_data = []
+    customer_details = []
+    
+    for customer in top_customers:
+        # Firma adını kısalt (çok uzunsa)
+        firma_name = customer['cari_firma']
+        original_name = firma_name
+        if len(firma_name) > 20:
+            firma_name = firma_name[:17] + '...'
         
-        if city_name not in city_labels:
-            city_labels.append(city_name)
-            city_data.append(float(city['total_sales']))
-        else:
-            idx = city_labels.index(city_name)
-            city_data[idx] += float(city['total_sales'])
+        customer_labels.append(firma_name)
+        customer_data.append(float(customer['total_purchase']))
+        customer_details.append({
+            'name': original_name,
+            'total': float(customer['total_purchase']),
+            'count': customer['siparis_sayisi']
+        })
     
     context = {
         'page_title': 'Dashboard',
@@ -137,9 +132,10 @@ def index(request):
         'son_islemler': son_islemler,
         'monthly_revenue': json.dumps(monthly_revenue),
         'monthly_labels': json.dumps(monthly_labels),
-        'city_sales_data': json.dumps({
-            'labels': city_labels,
-            'data': city_data
+        'top_customers_data': json.dumps({
+            'labels': customer_labels,
+            'data': customer_data,
+            'details': customer_details
         })
     }
     return render(request, 'dashboard/index.html', context)
@@ -342,27 +338,12 @@ def forms(request):
     toplam_tutar = siparisler.aggregate(total=Sum('toplam_fiyat'))['total'] or 0
     toplam_adet = siparisler.aggregate(total=Sum('adet'))['total'] or 0
     
-    # Grup bazında kontrol sayıları
+    # Grup bazında kontrol istatistikleri (lastik adet toplamı)
     grup_istatistikleri = siparisler.values('grup').annotate(
-        count=Count('id'),
+        total_adet=Sum('adet'),
         total_amount=Sum('toplam_fiyat')
-    ).order_by('-count')
+    ).order_by('-total_adet')
     
-    # Lastik Satış Analizi - Mevsim ve Araç Tipi bazında
-    tire_sales_data = {
-        'yaz': {
-            'binek': siparisler.filter(mevsim='yaz', grup='binek').aggregate(total=Sum('adet'))['total'] or 0,
-            'ticari': siparisler.filter(mevsim='yaz', grup='ticari').aggregate(total=Sum('adet'))['total'] or 0
-        },
-        'kis': {
-            'binek': siparisler.filter(mevsim='kis', grup='binek').aggregate(total=Sum('adet'))['total'] or 0,
-            'ticari': siparisler.filter(mevsim='kis', grup='ticari').aggregate(total=Sum('adet'))['total'] or 0
-        },
-        'dort_mevsim': {
-            'binek': siparisler.filter(mevsim='dort-mevsim', grup='binek').aggregate(total=Sum('adet'))['total'] or 0,
-            'ticari': siparisler.filter(mevsim='dort-mevsim', grup='ticari').aggregate(total=Sum('adet'))['total'] or 0
-        }
-    }
     
     # Sayfalama
     paginator = Paginator(siparisler, 15)  # Sayfa başına 15 kayıt
@@ -388,7 +369,6 @@ def forms(request):
             'toplam_adet': toplam_adet,
         },
         'grup_istatistikleri': grup_istatistikleri,
-        'tire_sales_data': json.dumps(tire_sales_data),
     }
     return render(request, 'dashboard/forms.html', context)
 
@@ -553,7 +533,13 @@ def yeni_lastik(request):
             messages.success(request, f'Sipariş başarıyla kaydedildi! ID: {siparis.id}')
             return redirect('dashboard:elements')
         else:
-            messages.error(request, 'Form hataları var. Lütfen kontrol edin.')
+            # Form hatalarını detaylı göster
+            error_messages = []
+            for field, errors in form.errors.items():
+                for error in errors:
+                    error_messages.append(f'{field}: {error}')
+            messages.error(request, f'Form hataları: {", ".join(error_messages)}')
+            print(f"Form errors: {form.errors}")  # Debug için
     else:
         form = SiparisForm()
     
@@ -709,11 +695,11 @@ def reports(request):
     toplam_tutar = siparisler.aggregate(total=Sum('toplam_fiyat'))['total'] or 0
     toplam_adet = siparisler.aggregate(total=Sum('adet'))['total'] or 0
     
-    # Grup bazında iptal sayıları
+    # Grup bazında iptal istatistikleri (lastik adet toplamı)
     grup_istatistikleri = siparisler.values('grup').annotate(
-        count=Count('id'),
+        total_adet=Sum('adet'),
         total_amount=Sum('toplam_fiyat')
-    ).order_by('-count')
+    ).order_by('-total_adet')
     
     # Sayfalama
     paginator = Paginator(siparisler, 15)  # Sayfa başına 15 kayıt
@@ -751,55 +737,126 @@ def messages_view(request):
 
 def calendar(request):
     """Calendar sayfası"""
-    # Örnek etkinlik verileri
-    events = [
-        {
-            'id': 1,
-            'title': 'Sipariş Toplantısı',
-            'start': '2025-01-15T10:00:00',
-            'end': '2025-01-15T11:00:00',
-            'color': '#3b82f6',
-            'description': 'Aylık sipariş değerlendirme toplantısı'
-        },
-        {
-            'id': 2,
-            'title': 'Lastik Teslimatı',
-            'start': '2025-01-16T14:00:00',
-            'end': '2025-01-16T16:00:00',
-            'color': '#10b981',
-            'description': 'KONLAS firmasına lastik teslimatı'
-        },
-        {
-            'id': 3,
-            'title': 'Stok Kontrolü',
-            'start': '2025-01-17T09:00:00',
-            'end': '2025-01-17T12:00:00',
-            'color': '#f59e0b',
-            'description': 'Aylık stok sayımı ve kontrolü'
-        },
-        {
-            'id': 4,
-            'title': 'Müşteri Ziyareti',
-            'start': '2025-01-18T13:00:00',
-            'end': '2025-01-18T15:00:00',
-            'color': '#8b5cf6',
-            'description': 'TOMAY firması müşteri ziyareti'
-        },
-        {
-            'id': 5,
-            'title': 'Rapor Hazırlama',
-            'start': '2025-01-20T10:00:00',
-            'end': '2025-01-20T17:00:00',
-            'color': '#ef4444',
-            'description': 'Aylık satış raporu hazırlama'
-        }
-    ]
-    
     context = {
-        'page_title': 'Calendar',
-        'events': json.dumps(events),
+        'page_title': 'Takvim',
     }
     return render(request, 'dashboard/calendar.html', context)
+
+@login_required
+def create_event(request):
+    """Etkinlik oluşturma API endpoint'i"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Gerekli alanları kontrol et
+            required_fields = ['title', 'date', 'time']
+            for field in required_fields:
+                if not data.get(field):
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'{field} alanı gereklidir'
+                    }, status=400)
+            
+            # Tarih ve saat verilerini parse et
+            from datetime import datetime
+            date_obj = datetime.strptime(data['date'], '%Y-%m-%d').date()
+            time_obj = datetime.strptime(data['time'], '%H:%M').time()
+            
+            # Etkinlik oluştur
+            event = Event.objects.create(
+                title=data['title'],
+                description=data.get('description', ''),
+                type=data.get('type', 'event'),
+                priority=data.get('priority', 'medium'),
+                date=date_obj,
+                time=time_obj,
+                duration=int(data.get('duration', 60)),
+                location=data.get('location', ''),
+                attendees=data.get('attendees', ''),
+                recurring=data.get('recurring', False),
+                recurrence=data.get('recurrence', 'none'),
+                reminders=json.dumps(data.get('reminders', [])),
+                created_by=request.user
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Etkinlik başarıyla oluşturuldu!',
+                'event': {
+                    'id': event.id,
+                    'title': event.title,
+                    'type': event.type,
+                    'date': event.date.strftime('%Y-%m-%d'),
+                    'time': event.time.strftime('%H:%M'),
+                    'description': event.description,
+                    'location': event.location,
+                    'duration': event.get_duration_display()
+                }
+            })
+            
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Geçersiz JSON verisi'
+            }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Sadece POST istekleri kabul edilir'
+    }, status=405)
+
+@login_required
+def get_events(request):
+    """Etkinlikleri getiren API endpoint'i"""
+    try:
+        # Tarih filtreleri
+        start_date = request.GET.get('start')
+        end_date = request.GET.get('end')
+        
+        events = Event.objects.filter(created_by=request.user)
+        
+        if start_date:
+            events = events.filter(date__gte=start_date)
+        if end_date:
+            events = events.filter(date__lte=end_date)
+        
+        events_data = []
+        for event in events:
+            events_data.append({
+                'id': event.id,
+                'title': event.title,
+                'type': event.type,
+                'date': event.date.strftime('%Y-%m-%d'),
+                'time': event.time.strftime('%H:%M'),
+                'timeStr': event.time.strftime('%H:%M'),
+                'dateStr': event.date.strftime('%d %b'),
+                'description': event.description,
+                'location': event.location,
+                'priority': event.priority,
+                'duration': event.duration,
+                'attendees': event.attendees,
+                'recurring': event.recurring,
+                'recurrence': event.recurrence,
+                'dateObj': event.date.isoformat(),
+                'read': True
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'events': events_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
 
 def files(request):
     """Files sayfası"""
@@ -807,6 +864,27 @@ def files(request):
         'page_title': 'Files',
     }
     return render(request, 'dashboard/files.html', context)
+
+def settings(request):
+    """Settings sayfası"""
+    context = {
+        'page_title': 'Settings',
+    }
+    return render(request, 'dashboard/settings.html', context)
+
+def security(request):
+    """Security sayfası"""
+    context = {
+        'page_title': 'Security',
+    }
+    return render(request, 'dashboard/security.html', context)
+
+def help(request):
+    """Help sayfası"""
+    context = {
+        'page_title': 'Help & Support',
+    }
+    return render(request, 'dashboard/help.html', context)
 
 def settings(request):
     """Settings sayfası"""

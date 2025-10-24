@@ -5,272 +5,1251 @@
 {% block page_name %}calendar{% endblock %}
 
 {% block extra_css %}
-<!-- FullCalendar CSS -->
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+<!-- Alpine.js -->
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <style>
-    .fc {
-        font-family: 'Inter', sans-serif;
+/* Calendar Layout */
+.calendar-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.calendar-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 0;
+    min-height: 600px;
+}
+
+/* Calendar Sidebar */
+.calendar-sidebar {
+    background: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.calendar-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* Mini Calendar */
+.mini-calendar {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.mini-calendar-header h6 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0;
+}
+
+.mini-calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin: 0.75rem 0;
+}
+
+.weekday {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    padding: 0.25rem;
+}
+
+.mini-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.mini-calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.mini-calendar-day:hover {
+    background: #e2e8f0;
+}
+
+.mini-calendar-day.today {
+    background: #3b82f6;
+    color: white;
+}
+
+.mini-calendar-day.other-month {
+    color: #9ca3af;
+}
+
+.mini-calendar-day.selected {
+    background: #1d4ed8;
+    color: white;
+}
+
+.mini-calendar-day.has-events::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background: #3b82f6;
+    border-radius: 50%;
+}
+
+/* Event Categories */
+.event-categories {
+    margin-bottom: 1.5rem;
+}
+
+.category-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.75rem;
+}
+
+.category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.category-item:hover {
+    background: #f1f5f9;
+}
+
+.category-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.category-name {
+    font-size: 0.875rem;
+    color: #374151;
+    flex: 1;
+}
+
+.category-count {
+    font-size: 0.75rem;
+    color: #6b7280;
+    background: #e2e8f0;
+    padding: 0.125rem 0.375rem;
+    border-radius: 12px;
+}
+
+/* Upcoming Events */
+.upcoming-events {
+    margin-bottom: 1.5rem;
+}
+
+.upcoming-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.75rem;
+}
+
+.upcoming-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.upcoming-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.upcoming-item:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.upcoming-time {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+}
+
+.upcoming-time .time {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #3b82f6;
+}
+
+.upcoming-time .date {
+    font-size: 0.625rem;
+    color: #6b7280;
+}
+
+.upcoming-content {
+    flex: 1;
+}
+
+.upcoming-event-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+}
+
+.upcoming-description {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+.upcoming-indicator {
+    position: absolute;
+    right: 0.75rem;
+    top: 0.75rem;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.upcoming-empty {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+}
+
+.upcoming-empty i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* Calendar Main Area */
+.calendar-main {
+    padding: 1.5rem;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.calendar-nav-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.calendar-nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.calendar-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+}
+
+.calendar-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.view-switcher {
+    display: flex;
+    background: #f1f5f9;
+    border-radius: 8px;
+    padding: 0.25rem;
+}
+
+.view-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.view-btn.active {
+    background: white;
+    color: #3b82f6;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Month View */
+.month-view {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.month-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.month-header-day {
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    border-right: 1px solid #e2e8f0;
+}
+
+.month-header-day:last-child {
+    border-right: none;
+}
+
+.month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(6, 120px);
+}
+
+.month-day {
+    border-right: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    position: relative;
+}
+
+.month-day:hover {
+    background: #f8fafc;
+}
+
+.month-day.today {
+    background: #eff6ff;
+}
+
+.month-day.other-month {
+    background: #f9fafb;
+    color: #9ca3af;
+}
+
+.month-day.selected {
+    background: #dbeafe;
+}
+
+.month-day.has-events {
+    border-left: 3px solid #3b82f6;
+}
+
+.day-number {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.day-events {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.day-event {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.day-event:hover {
+    transform: scale(1.02);
+}
+
+.event-event { background: #3b82f6; }
+.event-meeting { background: #10b981; }
+.event-task { background: #f59e0b; }
+.event-reminder { background: #8b5cf6; }
+.event-deadline { background: #ef4444; }
+
+.more-events {
+    font-size: 0.625rem;
+    color: #6b7280;
+    text-align: center;
+    padding: 0.25rem;
+    cursor: pointer;
+}
+
+.more-events:hover {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+/* Week View */
+.week-view {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.week-header {
+    display: grid;
+    grid-template-columns: 80px repeat(7, 1fr);
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.time-column {
+    padding: 1rem;
+    border-right: 1px solid #e2e8f0;
+}
+
+.week-header-day {
+    padding: 1rem;
+    text-align: center;
+    border-right: 1px solid #e2e8f0;
+}
+
+.week-header-day:last-child {
+    border-right: none;
+}
+
+.week-header-day.today {
+    background: #eff6ff;
+    color: #3b82f6;
+}
+
+.day-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.day-number {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-top: 0.25rem;
+}
+
+.week-grid {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.week-row {
+    display: grid;
+    grid-template-columns: 80px repeat(7, 1fr);
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.time-slot {
+    padding: 0.75rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+    border-right: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.time-slot.current-hour {
+    background: #fef3c7;
+    color: #d97706;
+    font-weight: 600;
+}
+
+.week-cell {
+    padding: 0.5rem;
+    min-height: 60px;
+    border-right: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background 0.2s;
+    position: relative;
+}
+
+.week-cell:hover {
+    background: #f8fafc;
+}
+
+.week-cell.today {
+    background: #eff6ff;
+}
+
+.week-cell.current-hour {
+    background: #fef3c7;
+}
+
+.week-event {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: white;
+    margin-bottom: 0.25rem;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Day View */
+.day-view {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.day-header {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.day-title h4 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+}
+
+.day-title p {
+    font-size: 1rem;
+    color: #64748b;
+    margin: 0.25rem 0 0 0;
+}
+
+.day-grid {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.day-row {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.day-cell {
+    padding: 0.75rem;
+    min-height: 80px;
+    cursor: pointer;
+    transition: background 0.2s;
+    position: relative;
+}
+
+.day-cell:hover {
+    background: #f8fafc;
+}
+
+.day-cell.current-hour {
+    background: #fef3c7;
+}
+
+.day-event {
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: white;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.day-event:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.event-time {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.event-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.event-description {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+/* Mobile Responsive */
+@media (max-width: 1024px) {
+    .calendar-layout {
+        grid-template-columns: 1fr;
     }
-    .fc-toolbar-title {
-        font-size: 1.5rem;
-        font-weight: 600;
+    
+    .calendar-sidebar {
+        display: none;
     }
-    .fc-button {
-        background-color: #6366f1;
-        border-color: #6366f1;
-        font-weight: 500;
+    
+    .calendar-sidebar.mobile-show {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 300px;
+        height: 100vh;
+        z-index: 1000;
+        overflow-y: auto;
     }
-    .fc-button:hover {
-        background-color: #4f46e5;
-        border-color: #4f46e5;
-    }
-    .fc-button:focus {
-        box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
-    }
-    .fc-event {
-        border-radius: 6px;
-        border: none;
-        font-weight: 500;
-    }
-    .fc-daygrid-event {
-        margin: 1px 2px;
-    }
-    .fc-timegrid-event {
-        border-radius: 4px;
-    }
-    .fc-event-title {
-        font-weight: 500;
-    }
-    .calendar-container {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    }
+}
+
+/* Floating Add Event Button */
+.add-event-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 56px;
+    height: 56px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    cursor: pointer;
+    transition: all 0.3s;
+    z-index: 100;
+}
+
+.add-event-btn:hover {
+    background: #2563eb;
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+}
+
+/* Reminders and Recurring Styles */
+.form-check-input:checked {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+/* Transition for recurring section */
+[x-transition] {
+    transition: all 0.3s ease;
+}
+
+/* Reminder Select Dropdown */
+.reminder-select {
+    background-color: #1e293b !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #475569 !important;
+    border-radius: 8px;
+    min-height: 120px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    padding: 4px;
+}
+
+.reminder-select option {
+    background-color: #1e293b !important;
+    color: #e2e8f0 !important;
+    padding: 10px 12px;
+    border: none;
+    margin: 2px 0;
+    border-radius: 4px;
+}
+
+.reminder-select option:hover,
+.reminder-select option:focus {
+    background-color: #334155 !important;
+    color: #f1f5f9 !important;
+}
+
+.reminder-select option:checked {
+    background-color: #3b82f6 !important;
+    color: white !important;
+    font-weight: 500;
+}
+
+.reminder-select:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+    outline: none;
+}
+
+/* Scrollbar styling for reminder select */
+.reminder-select::-webkit-scrollbar {
+    width: 8px;
+}
+
+.reminder-select::-webkit-scrollbar-track {
+    background: #334155;
+    border-radius: 4px;
+}
+
+.reminder-select::-webkit-scrollbar-thumb {
+    background: #64748b;
+    border-radius: 4px;
+}
+
+.reminder-select::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="h3 mb-1">Takvim</h1>
-        <p class="text-muted mb-0">Etkinliklerinizi planlayın ve takip edin.</p>
+<!-- Calendar Container with Header -->
+<div x-data="calendarComponent" x-init="init()">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h3 mb-0">Takvim</h1>
+            <p class="text-muted mb-0">Etkinliklerinizi planlayın ve takip edin</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary d-lg-none" @click="toggleSidebar()">
+                <i class="bi bi-calendar3 me-2"></i>Mini Takvim
+            </button>
+            <button type="button" class="btn btn-outline-secondary" @click="exportCalendar()">
+                <i class="bi bi-download me-2"></i>Dışa Aktar
+            </button>
+            <button type="button" class="btn btn-primary" @click="addEvent()">
+                <i class="bi bi-plus-lg me-2"></i>Etkinlik Ekle
+            </button>
+        </div>
     </div>
-    <div class="d-flex gap-2">
-        <button type="button" class="btn btn-outline-primary" id="todayBtn">
-            <i class="bi bi-calendar-day me-2"></i>
-            Bugün
-        </button>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#eventModal">
-            <i class="bi bi-plus-lg me-2"></i>
-            Yeni Etkinlik
-        </button>
-    </div>
-</div>
 
-<!-- Takvim Kartı -->
-<div class="card calendar-container">
-    <div class="card-body p-0">
-        <div id="calendar"></div>
-    </div>
-</div>
+    <!-- Calendar Container -->
+    <div class="calendar-container">
+        <div class="calendar-layout">
+            
+            <!-- Calendar Sidebar -->
+            <div class="calendar-sidebar" :class="{ 'mobile-show': sidebarVisible }">
+                <!-- Sidebar Header -->
+                <div class="calendar-sidebar-header">
+                    <h5 class="sidebar-title mb-0">Takvim</h5>
+                    <button class="btn btn-primary btn-sm" @click="addEvent()" title="Etkinlik Ekle">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+                
+                <!-- Mini Calendar -->
+                <div class="mini-calendar">
+                    <div class="mini-calendar-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button class="btn btn-sm btn-outline-secondary" @click="previousMonth()">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                            <h6 class="mb-0 fw-semibold" x-text="currentMonthYear"></h6>
+                            <button class="btn btn-sm btn-outline-secondary" @click="nextMonth()">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Mini Calendar Days Header -->
+                    <div class="mini-calendar-weekdays">
+                        <div class="weekday">P</div>
+                        <div class="weekday">P</div>
+                        <div class="weekday">S</div>
+                        <div class="weekday">Ç</div>
+                        <div class="weekday">P</div>
+                        <div class="weekday">C</div>
+                        <div class="weekday">C</div>
+                    </div>
+                    
+                    <div class="mini-calendar-grid">
+                        <template x-for="day in miniCalendarDays" :key="day.date">
+                            <div class="mini-calendar-day" 
+                                 :class="{ 
+                                     'today': day.isToday, 
+                                     'other-month': day.isOtherMonth,
+                                     'selected': day.isSelected,
+                                     'has-events': day.hasEvents
+                                 }"
+                                 @click="selectDate(day.date)"
+                                 x-text="day.day"></div>
+                        </template>
+                    </div>
+                </div>
 
-<!-- Etkinlik Modal -->
-<div class="modal fade" id="eventModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Yeni Etkinlik</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <!-- Event Categories -->
+                <div class="event-categories">
+                    <h6 class="category-title">Etkinlik Kategorileri</h6>
+                    <div class="category-list">
+                        <label class="category-item">
+                            <input type="checkbox" x-model="visibleTypes" value="event" class="form-check-input">
+                            <span class="category-color" style="background: var(--bs-primary);"></span>
+                            <span class="category-name">Etkinlikler</span>
+                            <span class="category-count" x-text="getCategoryCount('event')"></span>
+                        </label>
+                        <label class="category-item">
+                            <input type="checkbox" x-model="visibleTypes" value="meeting" class="form-check-input">
+                            <span class="category-color" style="background: var(--bs-success);"></span>
+                            <span class="category-name">Toplantılar</span>
+                            <span class="category-count" x-text="getCategoryCount('meeting')"></span>
+                        </label>
+                        <label class="category-item">
+                            <input type="checkbox" x-model="visibleTypes" value="task" class="form-check-input">
+                            <span class="category-color" style="background: var(--bs-warning);"></span>
+                            <span class="category-name">Görevler</span>
+                            <span class="category-count" x-text="getCategoryCount('task')"></span>
+                        </label>
+                        <label class="category-item">
+                            <input type="checkbox" x-model="visibleTypes" value="reminder" class="form-check-input">
+                            <span class="category-color" style="background: #8b5cf6;"></span>
+                            <span class="category-name">Hatırlatıcılar</span>
+                            <span class="category-count" x-text="getCategoryCount('reminder')"></span>
+                        </label>
+                        <label class="category-item">
+                            <input type="checkbox" x-model="visibleTypes" value="deadline" class="form-check-input">
+                            <span class="category-color" style="background: var(--bs-danger);"></span>
+                            <span class="category-name">Son Tarihler</span>
+                            <span class="category-count" x-text="getCategoryCount('deadline')"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Upcoming Events -->
+                <div class="upcoming-events">
+                    <h6 class="upcoming-title">Yaklaşan Etkinlikler</h6>
+                    <div class="upcoming-list">
+                        <template x-for="event in upcomingEvents.slice(0, 5)" :key="event.id">
+                            <div class="upcoming-item" @click="viewEvent(event)">
+                                <div class="upcoming-time">
+                                    <span class="time" x-text="event.timeStr"></span>
+                                    <span class="date" x-text="event.dateStr"></span>
+                                </div>
+                                <div class="upcoming-content">
+                                    <h6 class="upcoming-event-title" x-text="event.title"></h6>
+                                    <p class="upcoming-description" x-text="event.description"></p>
+                                </div>
+                                <div class="upcoming-indicator" :style="`background: ${getCategoryColor(event.type)}`"></div>
+                            </div>
+                        </template>
+                        
+                        <!-- Empty state -->
+                        <div x-show="upcomingEvents.length === 0" class="upcoming-empty">
+                            <i class="bi bi-calendar-check"></i>
+                            <p>Yaklaşan etkinlik yok</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="modal-body">
-                <form id="eventForm">
-                    <div class="mb-3">
-                        <label class="form-label">Etkinlik Başlığı</label>
-                        <input type="text" class="form-control" id="eventTitle" required>
+
+            <!-- Calendar Main Area -->
+            <div class="calendar-main">
+                
+                <!-- Calendar Header -->
+                <div class="calendar-header">
+                    <div class="calendar-nav-left">
+                        <button class="btn btn-link d-lg-none me-2 p-0" @click="sidebarVisible = !sidebarVisible">
+                            <i class="bi bi-list fs-5"></i>
+                        </button>
+                        <div class="calendar-nav-controls">
+                            <button class="btn btn-outline-secondary" @click="previousPeriod()">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                            <button class="btn btn-outline-primary" @click="goToToday()">Bugün</button>
+                            <button class="btn btn-outline-secondary" @click="nextPeriod()">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
+                        <h3 class="calendar-title" x-text="currentPeriodTitle"></h3>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Başlangıç Tarihi</label>
-                                <input type="datetime-local" class="form-control" id="eventStart" required>
+                    
+                    <div class="calendar-nav-right">
+                        <div class="view-switcher">
+                            <button class="view-btn" :class="{ 'active': currentView === 'month' }" @click="switchView('month')">
+                                <i class="bi bi-calendar3 me-1"></i>Ay
+                            </button>
+                            <button class="view-btn" :class="{ 'active': currentView === 'week' }" @click="switchView('week')">
+                                <i class="bi bi-calendar2-week me-1"></i>Hafta
+                            </button>
+                            <button class="view-btn" :class="{ 'active': currentView === 'day' }" @click="switchView('day')">
+                                <i class="bi bi-calendar-day me-1"></i>Gün
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar Content -->
+                <div class="calendar-content">
+                    
+                    <!-- Month View -->
+                    <div x-show="currentView === 'month'" class="month-view">
+                        <!-- Month Grid Header -->
+                        <div class="month-header">
+                            <div class="month-header-day">Pazar</div>
+                            <div class="month-header-day">Pazartesi</div>
+                            <div class="month-header-day">Salı</div>
+                            <div class="month-header-day">Çarşamba</div>
+                            <div class="month-header-day">Perşembe</div>
+                            <div class="month-header-day">Cuma</div>
+                            <div class="month-header-day">Cumartesi</div>
+                        </div>
+                        
+                        <!-- Month Grid -->
+                        <div class="month-grid">
+                            <template x-for="day in calendarDays" :key="day.date">
+                                <div class="month-day" 
+                                     :class="{ 
+                                         'today': day.isToday, 
+                                         'other-month': day.isOtherMonth,
+                                         'selected': day.isSelected,
+                                         'has-events': day.events && day.events.length > 0
+                                     }"
+                                     @click="selectDay(day)"
+                                     @dblclick="addEventForDay(day)">
+                                    <div class="day-number" x-text="day.day"></div>
+                                    <div class="day-events">
+                                        <template x-for="(event, index) in day.events?.slice(0, 3)" :key="event.id">
+                                            <div class="day-event" 
+                                                 :class="`event-${event.type}`"
+                                                 @click.stop="viewEvent(event)"
+                                                 :title="event.title + ' - ' + event.time">
+                                                <span class="event-title" x-text="event.title"></span>
+                                            </div>
+                                        </template>
+                                        <div x-show="day.events && day.events.length > 3" 
+                                             class="more-events"
+                                             @click.stop="showMoreEvents(day)"
+                                             x-text="`+${day.events.length - 3} daha`"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Week View -->
+                    <div x-show="currentView === 'week'" class="week-view">
+                        <!-- Week Header -->
+                        <div class="week-header">
+                            <div class="time-column"></div>
+                            <template x-for="day in weekDays" :key="day.date">
+                                <div class="week-header-day" :class="{ 'today': day.isToday }">
+                                    <div class="day-name" x-text="day.dayName"></div>
+                                    <div class="day-number" x-text="day.dayNumber"></div>
+                                </div>
+                            </template>
+                        </div>
+                        
+                        <!-- Week Grid -->
+                        <div class="week-grid">
+                            <template x-for="hour in hours" :key="hour">
+                                <div class="week-row">
+                                    <div class="time-slot" :class="{ 'current-hour': isCurrentHour(hour) }">
+                                        <span x-text="hour"></span>
+                                    </div>
+                                    <template x-for="day in weekDays" :key="day.date + hour">
+                                        <div class="week-cell" 
+                                             :class="{ 'today': day.isToday, 'current-hour': isCurrentHour(hour) }"
+                                             @click="addEventAtTime(day.date, hour)">
+                                            <template x-for="event in getEventsForDateTime(day.date, hour)" :key="event.id">
+                                                <div class="week-event" 
+                                                     :class="`event-${event.type}`"
+                                                     @click.stop="viewEvent(event)"
+                                                     :title="event.title">
+                                                    <span x-text="event.title"></span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Day View -->
+                    <div x-show="currentView === 'day'" class="day-view">
+                        <!-- Day Header -->
+                        <div class="day-header">
+                            <div class="day-title">
+                                <h4 x-text="selectedDayTitle"></h4>
+                                <p x-text="selectedDayDate"></p>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Bitiş Tarihi</label>
-                                <input type="datetime-local" class="form-control" id="eventEnd" required>
-                            </div>
+                        
+                        <!-- Day Grid -->
+                        <div class="day-grid">
+                            <template x-for="hour in hours" :key="hour">
+                                <div class="day-row">
+                                    <div class="time-slot" :class="{ 'current-hour': isCurrentHour(hour) }">
+                                        <span x-text="hour"></span>
+                                    </div>
+                                    <div class="day-cell" 
+                                         :class="{ 'current-hour': isCurrentHour(hour) }"
+                                         @click="addEventAtTime(selectedDay, hour)">
+                                        <template x-for="event in getEventsForDateTime(selectedDay, hour)" :key="event.id">
+                                            <div class="day-event" 
+                                                 :class="`event-${event.type}`"
+                                                 @click.stop="viewEvent(event)"
+                                                 :title="event.title + ' - ' + event.description">
+                                                <div class="event-time" x-text="event.time"></div>
+                                                <div class="event-title" x-text="event.title"></div>
+                                                <div class="event-description" x-text="event.description"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Açıklama</label>
-                        <textarea class="form-control" id="eventDescription" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Add Event Button -->
+    <button class="add-event-btn" @click="addEvent()" title="Etkinlik Ekle">
+        <i class="bi bi-plus-lg fs-4"></i>
+    </button>
+</div>
+
+<!-- Add Event Modal -->
+<div class="modal fade" id="addEventModal" tabindex="-1" aria-labelledby="addEventModalLabel" aria-hidden="true" x-data="addEventModal" x-init="init()">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <div>
+                    <h5 class="modal-title fw-bold" id="addEventModalLabel">
+                        <i class="bi bi-calendar-plus me-2 text-primary"></i>Yeni Etkinlik
+                    </h5>
+                    <p class="text-muted mb-0 small">Tüm detaylarla yeni bir takvim etkinliği oluşturun</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <form @submit.prevent="submitEvent()">
+                    {% csrf_token %}
+                    <!-- Event Title -->
+                    <div class="mb-4">
+                        <label for="eventTitle" class="form-label fw-semibold">
+                            <i class="bi bi-pencil me-1"></i>Etkinlik Başlığı *
+                        </label>
+                        <input type="text" 
+                               class="form-control form-control-lg" 
+                               id="eventTitle" 
+                               x-model="eventData.title" 
+                               placeholder="Etkinlik başlığını girin..."
+                               required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Renk</label>
-                        <select class="form-select" id="eventColor">
-                            <option value="#3b82f6">Mavi</option>
-                            <option value="#10b981">Yeşil</option>
-                            <option value="#f59e0b">Sarı</option>
-                            <option value="#8b5cf6">Mor</option>
-                            <option value="#ef4444">Kırmızı</option>
-                            <option value="#6b7280">Gri</option>
+
+                    <!-- Event Type & Priority -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="eventType" class="form-label fw-semibold">
+                                <i class="bi bi-tag me-1"></i>Etkinlik Türü
+                            </label>
+                            <select class="form-select" id="eventType" x-model="eventData.type">
+                                <option value="event">📅 Etkinlik</option>
+                                <option value="meeting">🤝 Toplantı</option>
+                                <option value="task">✅ Görev</option>
+                                <option value="reminder">🔔 Hatırlatıcı</option>
+                                <option value="deadline">⚠️ Son Tarih</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="eventPriority" class="form-label fw-semibold">
+                                <i class="bi bi-flag me-1"></i>Öncelik
+                            </label>
+                            <select class="form-select" id="eventPriority" x-model="eventData.priority">
+                                <option value="low">Düşük Öncelik</option>
+                                <option value="medium">Orta Öncelik</option>
+                                <option value="high">Yüksek Öncelik</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Date & Time -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="eventDate" class="form-label fw-semibold">
+                                <i class="bi bi-calendar-event me-1"></i>Tarih *
+                            </label>
+                            <input type="date" class="form-control" id="eventDate" x-model="eventData.date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="eventTime" class="form-label fw-semibold">
+                                <i class="bi bi-clock me-1"></i>Başlangıç Saati *
+                            </label>
+                            <input type="time" class="form-control" id="eventTime" x-model="eventData.time" required>
+                        </div>
+                    </div>
+
+                    <!-- Duration & Location -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="eventDuration" class="form-label fw-semibold">
+                                <i class="bi bi-hourglass-split me-1"></i>Süre
+                            </label>
+                            <select class="form-select" id="eventDuration" x-model="eventData.duration">
+                                <option value="15">15 dakika</option>
+                                <option value="30">30 dakika</option>
+                                <option value="45">45 dakika</option>
+                                <option value="60">1 saat</option>
+                                <option value="90">1.5 saat</option>
+                                <option value="120">2 saat</option>
+                                <option value="180">3 saat</option>
+                                <option value="240">4 saat</option>
+                                <option value="480">Tüm gün</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="eventLocation" class="form-label fw-semibold">
+                                <i class="bi bi-geo-alt me-1"></i>Konum
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="eventLocation" 
+                                   x-model="eventData.location" 
+                                   placeholder="Toplantı odası, adres veya link...">
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-4">
+                        <label for="eventDescription" class="form-label fw-semibold">
+                            <i class="bi bi-card-text me-1"></i>Açıklama
+                        </label>
+                        <textarea class="form-control" 
+                                  id="eventDescription" 
+                                  rows="3" 
+                                  x-model="eventData.description" 
+                                  placeholder="Etkinlik detayları, gündem veya notlar ekleyin..."></textarea>
+                    </div>
+
+                    <!-- Reminders -->
+                    <div class="mb-4">
+                        <label for="eventReminders" class="form-label fw-semibold">
+                            <i class="bi bi-bell me-1"></i>Hatırlatıcılar
+                        </label>
+                        <select class="form-select reminder-select" 
+                                id="eventReminders" 
+                                x-model="eventData.selectedReminders" 
+                                multiple 
+                                size="4"
+                                style="background-color: #1e293b; color: #e2e8f0; border: 1px solid #475569;">
+                            <template x-for="reminder in reminderOptions" :key="reminder.value">
+                                <option :value="reminder.value" 
+                                        x-text="reminder.label"
+                                        style="padding: 8px 12px; background-color: #1e293b; color: #e2e8f0;">
+                                </option>
+                            </template>
                         </select>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="bi bi-info-circle me-1"></i>Ctrl/Cmd tuşu ile birden fazla hatırlatıcı seçebilirsiniz
+                        </small>
+                    </div>
+
+                    <!-- Recurring Event -->
+                    <div class="mb-4">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   id="eventRecurring" 
+                                   x-model="eventData.recurring">
+                            <label class="form-check-label fw-semibold" for="eventRecurring">
+                                <i class="bi bi-arrow-repeat me-1"></i>Tekrarlanan Etkinlik
+                            </label>
+                        </div>
+                        
+                        <!-- Repeat Pattern (only show if recurring is enabled) -->
+                        <div x-show="eventData.recurring" x-transition class="border rounded p-3 bg-light">
+                            <label for="eventRecurrence" class="form-label fw-semibold mb-2">
+                                Tekrar Deseni
+                            </label>
+                            <select class="form-select" id="eventRecurrence" x-model="eventData.recurrence">
+                                <option value="none">Tekrarlanmaz</option>
+                                <option value="daily">Günlük</option>
+                                <option value="weekly">Haftalık</option>
+                                <option value="biweekly">2 Haftada Bir</option>
+                                <option value="monthly">Aylık</option>
+                                <option value="yearly">Yıllık</option>
+                            </select>
+                        </div>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                <button type="button" class="btn btn-primary" id="saveEvent">Kaydet</button>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i>İptal
+                </button>
+                <button type="button" class="btn btn-primary px-4" @click="submitEvent()">
+                    <i class="bi bi-check-lg me-1"></i>Etkinlik Oluştur
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Etkinlik Detay Modal -->
-<div class="modal fade" id="eventDetailModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="eventDetailTitle">Etkinlik Detayı</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <strong>Başlangıç:</strong> <span id="eventDetailStart"></span>
-                </div>
-                <div class="mb-3">
-                    <strong>Bitiş:</strong> <span id="eventDetailEnd"></span>
-                </div>
-                <div class="mb-3">
-                    <strong>Açıklama:</strong> <span id="eventDetailDescription"></span>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" id="deleteEvent">Sil</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
-<!-- FullCalendar JS -->
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var calendarEl = document.getElementById('calendar');
-    
-    // Etkinlik verileri
-    var events = {{ events|safe }};
-    
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        locale: 'tr',
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-        },
-        buttonText: {
-            today: 'Bugün',
-            month: 'Ay',
-            week: 'Hafta',
-            day: 'Gün',
-            list: 'Liste'
-        },
-        events: events,
-        eventClick: function(info) {
-            showEventDetail(info.event);
-        },
-        dateClick: function(info) {
-            // Tarihe tıklandığında yeni etkinlik oluştur
-            document.getElementById('eventStart').value = info.dateStr + 'T09:00';
-            document.getElementById('eventEnd').value = info.dateStr + 'T10:00';
-            var eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
-            eventModal.show();
-        },
-        eventDisplay: 'block',
-        height: 'auto',
-        contentHeight: 600,
-        dayMaxEvents: 3,
-        moreLinkClick: 'popover'
-    });
-    
-    calendar.render();
-    
-    // Bugün butonu
-    document.getElementById('todayBtn').addEventListener('click', function() {
-        calendar.today();
-    });
-    
-    // Yeni etkinlik kaydetme
-    document.getElementById('saveEvent').addEventListener('click', function() {
-        var title = document.getElementById('eventTitle').value;
-        var start = document.getElementById('eventStart').value;
-        var end = document.getElementById('eventEnd').value;
-        var description = document.getElementById('eventDescription').value;
-        var color = document.getElementById('eventColor').value;
-        
-        if (title && start && end) {
-            var newEvent = {
-                title: title,
-                start: start,
-                end: end,
-                description: description,
-                color: color
-            };
-            
-            calendar.addEvent(newEvent);
-            
-            // Formu temizle
-            document.getElementById('eventForm').reset();
-            
-            // Modal'ı kapat
-            var eventModal = bootstrap.Modal.getInstance(document.getElementById('eventModal'));
-            eventModal.hide();
-            
-            // Başarı mesajı
-            showAlert('Etkinlik başarıyla eklendi!', 'success');
-        }
-    });
-    
-    // Etkinlik detayını göster
-    function showEventDetail(event) {
-        document.getElementById('eventDetailTitle').textContent = event.title;
-        document.getElementById('eventDetailStart').textContent = event.start.toLocaleString('tr-TR');
-        document.getElementById('eventDetailEnd').textContent = event.end.toLocaleString('tr-TR');
-        document.getElementById('eventDetailDescription').textContent = event.extendedProps.description || 'Açıklama yok';
-        
-        var eventDetailModal = new bootstrap.Modal(document.getElementById('eventDetailModal'));
-        eventDetailModal.show();
-        
-        // Silme işlemi
-        document.getElementById('deleteEvent').onclick = function() {
-            if (confirm('Bu etkinliği silmek istediğinizden emin misiniz?')) {
-                event.remove();
-                eventDetailModal.hide();
-                showAlert('Etkinlik silindi!', 'warning');
-            }
-        };
-    }
-    
-    // Alert fonksiyonu
-    function showAlert(message, type) {
-        var alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-' + type + ' alert-dismissible fade show position-fixed';
-        alertDiv.style.top = '20px';
-        alertDiv.style.right = '20px';
-        alertDiv.style.zIndex = '9999';
-        alertDiv.innerHTML = message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
-        
-        document.body.appendChild(alertDiv);
-        
-        setTimeout(function() {
-            alertDiv.remove();
-        }, 3000);
-    }
-});
-</script>
+<script src="{% static 'js/calendar.js' %}"></script>
 {% endblock %}

@@ -229,15 +229,21 @@
 
 </div>
 
-<!-- Sales by Location -->
+<!-- En Çok Alım Yaptığımız Cariler -->
 <div class="row g-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-0">Sales by Location</h5>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title mb-1">En Çok Alım Yaptığımız Cariler</h5>
+                        <small class="text-muted">Yeni Sipariş Ekle'den oluşturulan veriler - Fiyat bazında sıralama</small>
+                    </div>
+                    <span class="badge bg-success">Kontrol Edilmiş</span>
+                </div>
             </div>
             <div class="card-body">
-                <div id="salesByLocationChart" style="min-height: 400px; width: 100%;"></div>
+                <div id="topCustomersChart" style="min-height: 400px; width: 100%;"></div>
             </div>
         </div>
     </div>
@@ -473,21 +479,35 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // Sales by Location Chart (Bar Chart)
-    const salesByLocationCtx = document.getElementById('salesByLocationChart');
-    if (salesByLocationCtx) {
-        const citySalesData = JSON.parse('{{ city_sales_data|escapejs }}');
+    // En Çok Alım Yaptığımız Cariler Chart (Bar Chart)
+    const topCustomersCtx = document.getElementById('topCustomersChart');
+    if (topCustomersCtx) {
+        const topCustomersData = JSON.parse('{{ top_customers_data|escapejs }}');
         
-        const salesByLocationChart = new Chart(salesByLocationCtx, {
+        // Renkli bar chart için farklı renkler
+        const colors = [
+            'rgba(239, 68, 68, 0.8)',   // Kırmızı
+            'rgba(59, 130, 246, 0.8)',  // Mavi
+            'rgba(245, 158, 11, 0.8)',  // Sarı
+            'rgba(16, 185, 129, 0.8)',  // Yeşil
+            'rgba(139, 92, 246, 0.8)',  // Mor
+            'rgba(236, 72, 153, 0.8)',  // Pembe
+            'rgba(6, 182, 212, 0.8)',   // Cyan
+            'rgba(132, 204, 22, 0.8)'   // Lime
+        ];
+        
+        const topCustomersChart = new Chart(topCustomersCtx, {
             type: 'bar',
             data: {
-                labels: citySalesData.labels,
+                labels: topCustomersData.labels,
                 datasets: [{
-                    label: 'Satış (₺)',
-                    data: citySalesData.data,
-                    backgroundColor: 'rgba(99, 102, 241, 0.8)',
-                    borderColor: '#6366f1',
-                    borderWidth: 1
+                    label: 'Toplam Alım (₺)',
+                    data: topCustomersData.data,
+                    backgroundColor: colors.slice(0, topCustomersData.labels.length),
+                    borderColor: colors.slice(0, topCustomersData.labels.length).map(color => color.replace('0.8', '1')),
+                    borderWidth: 2,
+                    borderRadius: 4,
+                    borderSkipped: false,
                 }]
             },
             options: {
@@ -495,7 +515,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        display: false
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                const details = topCustomersData.details[context[0].dataIndex];
+                                return details.name;
+                            },
+                            label: function(context) {
+                                const details = topCustomersData.details[context.dataIndex];
+                                return [
+                                    'Toplam Alım: ₺' + context.parsed.y.toLocaleString('tr-TR'),
+                                    'Sipariş Sayısı: ' + details.count + ' adet'
+                                ];
+                            }
+                        },
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1
                     }
                 },
                 scales: {
@@ -503,11 +548,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         beginAtZero: true,
                         grid: {
                             color: 'rgba(0,0,0,0.1)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '₺' + value.toLocaleString('tr-TR');
+                            }
                         }
                     },
                     x: {
                         grid: {
                             display: false
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 0
                         }
                     }
                 }

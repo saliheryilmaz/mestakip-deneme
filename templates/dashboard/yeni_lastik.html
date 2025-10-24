@@ -149,6 +149,15 @@
                             {% endif %}
                         </div>
 
+                        <!-- SMS DURUMU -->
+                        <div class="col-12">
+                            <label for="{{ form.sms_durum.id_for_label }}" class="form-label">{{ form.sms_durum.label }}</label>
+                            {{ form.sms_durum }}
+                            {% if form.sms_durum.errors %}
+                                <div class="text-danger">{{ form.sms_durum.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
                         <!-- ÖNE ÇIKAR -->
                         <div class="col-12">
                             <div class="form-check">
@@ -275,8 +284,29 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', function(e) {
         console.log('Form gönderiliyor');
         
+        // Form validation kontrolü
+        const requiredFields = ['cari_firma', 'marka', 'urun', 'grup', 'mevsim', 'adet', 'birim_fiyat', 'ambar', 'odeme'];
+        let hasErrors = false;
+        
+        requiredFields.forEach(fieldName => {
+            const field = document.getElementById(`id_${fieldName}`);
+            if (field && !field.value.trim()) {
+                hasErrors = true;
+                field.style.borderColor = '#dc3545';
+                console.log(`Eksik alan: ${fieldName}`);
+            } else if (field) {
+                field.style.borderColor = '';
+            }
+        });
+        
+        if (hasErrors) {
+            e.preventDefault();
+            alert('Lütfen tüm zorunlu alanları doldurun!');
+            return false;
+        }
+        
         // Django form'unun normal gönderimine izin ver
-        // e.preventDefault() kaldırıldı
+        console.log('Form gönderiliyor - tüm alanlar dolu');
     });
     
     // Sayfa yüklendiğinde toplam fiyatı hesapla

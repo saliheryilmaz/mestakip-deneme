@@ -97,7 +97,7 @@
                         <div class="card border-{{ grup.grup|default:'secondary' }}">
                             <div class="card-body text-center">
                                 <h6 class="card-title text-uppercase">{{ grup.grup|default:'Bilinmeyen' }}</h6>
-                                <h4 class="text-warning">{{ grup.count }}</h4>
+                                <h4 class="text-warning">{{ grup.total_adet }}</h4>
                                 <small class="text-muted">₺{{ grup.total_amount|floatformat:2 }}</small>
                             </div>
                         </div>
@@ -338,19 +338,6 @@
     </div>
 </div>
 
-<!-- Lastik Satış Analizi Chart -->
-<div class="row g-4 mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Lastik Satış Analizi (3D)</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="tireSalesChart" height="200"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -375,122 +362,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Sayfa yüklendiğinde ebat vurgulamasını uygula
     highlightEbatInTable();
     
-    // Lastik Satış Analizi Chart (3D Bar Chart)
-    const tireSalesCtx = document.getElementById('tireSalesChart');
-    if (tireSalesCtx) {
-        const tireSalesData = JSON.parse('{{ tire_sales_data|escapejs }}');
-        
-        const tireSalesChart = new Chart(tireSalesCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Yaz', 'Kış', '4 Mevsim'],
-                datasets: [{
-                    label: 'Binek',
-                    data: [
-                        tireSalesData.yaz.binek,
-                        tireSalesData.kis.binek,
-                        tireSalesData.dort_mevsim.binek
-                    ],
-                    backgroundColor: 'rgba(99, 102, 241, 0.8)',
-                    borderColor: '#6366f1',
-                    borderWidth: 2,
-                    borderRadius: 6,
-                    borderSkipped: false,
-                }, {
-                    label: 'Ticari',
-                    data: [
-                        tireSalesData.yaz.ticari,
-                        tireSalesData.kis.ticari,
-                        tireSalesData.dort_mevsim.ticari
-                    ],
-                    backgroundColor: 'rgba(236, 72, 153, 0.8)',
-                    borderColor: '#ec4899',
-                    borderWidth: 2,
-                    borderRadius: 6,
-                    borderSkipped: false,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Lastik Satış Analizi - Mevsim ve Araç Tipi',
-                        font: {
-                            size: 14,
-                            weight: 'bold'
-                        }
-                    },
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 20,
-                            font: {
-                                size: 12
-                            }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const vehicleType = context.dataset.label;
-                                const value = context.parsed.y;
-                                return `${vehicleType}: ${value} adet`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: Math.max(
-                            tireSalesData.yaz.binek, tireSalesData.yaz.ticari,
-                            tireSalesData.kis.binek, tireSalesData.kis.ticari,
-                            tireSalesData.dort_mevsim.binek, tireSalesData.dort_mevsim.ticari
-                        ) + 2,
-                        ticks: {
-                            stepSize: 2,
-                            callback: function(value) {
-                                return value;
-                            }
-                        },
-                        title: {
-                            display: true,
-                            text: 'Satılan Adet',
-                            font: {
-                                size: 12,
-                                weight: 'bold'
-                            }
-                        },
-                        grid: {
-                            color: 'rgba(0,0,0,0.1)',
-                            drawBorder: false
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Mevsim',
-                            font: {
-                                size: 12,
-                                weight: 'bold'
-                            }
-                        },
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                }
-            }
-        });
-    }
     
     // Tarih filtreleme fonksiyonları
     const tarihSelect = document.getElementById('tarih');
