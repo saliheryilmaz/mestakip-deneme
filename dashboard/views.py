@@ -610,7 +610,8 @@ def siparis_whatsapp(request, siparis_id):
 *Güncellenen Son Tarih:* {timezone.localtime(siparis.guncelleme_tarihi).strftime('%d.%m.%Y %H:%M')}"""
     
     # WhatsApp URL'si oluştur (telefon numarası placeholder)
-    whatsapp_url = f"https://wa.me/?text={mesaj.replace(' ', '%20').replace('\n', '%0A')}"
+    encoded_mesaj = mesaj.replace(' ', '%20').replace('\n', '%0A')
+    whatsapp_url = f"https://wa.me/?text={encoded_mesaj}"
     
     return redirect(whatsapp_url)
 
