@@ -61,6 +61,10 @@ if not DEBUG:
 # Healthcheck için basit ayarlar
 HEALTHCHECK_ENABLED = True
 
+# Railway için basit ayarlar
+USE_TZ = True
+USE_I18N = True
+
 
 # Application definition
 
@@ -83,7 +87,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'metis_admin.security_middleware.SecurityHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'metis_admin.urls'

@@ -19,16 +19,19 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import redirect
-from . import healthcheck
+from django.http import HttpResponse
 
 def redirect_to_login(request):
     return redirect('dashboard:login')
+
+def healthcheck(request):
+    return HttpResponse("OK", status=200)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', redirect_to_login, name='home'),
     path('dashboard/', include('dashboard.urls')),
-    path('health/', healthcheck.healthcheck, name='healthcheck'),
+    path('health/', healthcheck, name='healthcheck'),
 ]
 
 # Serve static files during development
