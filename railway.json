@@ -11,6 +11,12 @@
     "restartPolicyMaxRetries": 10
   },
   "variables": {
-    "NODE_VERSION": "20.19.0"
+    "NODE_VERSION": "20.19.0",
+    "NPM_VERSION": "10.0.0",
+    "DEBUG": "False",
+    "SECURE_SSL_REDIRECT": "True",
+    "SECURE_HSTS_SECONDS": "31536000",
+    "SECURE_HSTS_INCLUDE_SUBDOMAINS": "True",
+    "SECURE_HSTS_PRELOAD": "True"
   }
 }
