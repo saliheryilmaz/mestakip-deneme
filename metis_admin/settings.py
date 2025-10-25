@@ -24,36 +24,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-8gy15^z036tfb9a%#36tgy6ssb==3+@c1)1nh6@!fdowo$%e!n')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'  # Railway için geçici olarak True
 
 # Railway deployment için güvenli host ayarları
-ALLOWED_HOSTS = [
-    '.railway.app',
-    '.up.railway.app',
-    'localhost',
-    '127.0.0.1',
-    '0.0.0.0'
-]
+ALLOWED_HOSTS = ['*']  # Railway için tüm hostları kabul et
 
-# Railway'den gelen host'u otomatik ekle
-RAILWAY_STATIC_URL = os.environ.get('RAILWAY_STATIC_URL')
-if RAILWAY_STATIC_URL:
-    ALLOWED_HOSTS.append(RAILWAY_STATIC_URL.replace('https://', '').replace('http://', ''))
-
-# Production'da tüm hostları kabul et (geçici)
-if not DEBUG:
-    ALLOWED_HOSTS.append('*')
-
-# Security settings for production - Railway için basitleştirildi
-if not DEBUG:
-    # HTTPS Settings - Railway için gerekli
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = False  # Railway'de sorun çıkarabilir
-    
-    # Content Security
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_BROWSER_XSS_FILTER = True
-    X_FRAME_OPTIONS = 'DENY'
+# Security settings - Railway için minimal
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = False
 
 # Healthcheck için basit ayarlar
 HEALTHCHECK_ENABLED = True

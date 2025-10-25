@@ -29,9 +29,6 @@ COPY . .
 # Create staticfiles directory
 RUN mkdir -p staticfiles
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
-
 # Create a non-root user
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
 USER appuser
@@ -39,5 +36,5 @@ USER appuser
 # Expose port
 EXPOSE $PORT
 
-# Run migrations and start gunicorn
-CMD python manage.py migrate && gunicorn metis_admin.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 300
+# Start application
+CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn metis_admin.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 300 --log-level info"]
