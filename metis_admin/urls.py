@@ -26,7 +26,14 @@ def redirect_to_login(request):
 
 def healthcheck(request):
     """Simple healthcheck endpoint for Railway"""
-    return HttpResponse("OK", status=200, content_type="text/plain")
+    try:
+        # Basit bir database check
+        from django.db import connection
+        cursor = connection.cursor()
+        cursor.execute("SELECT 1")
+        return HttpResponse("OK", status=200, content_type="text/plain")
+    except Exception as e:
+        return HttpResponse(f"ERROR: {str(e)}", status=500, content_type="text/plain")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
