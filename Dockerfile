@@ -15,6 +15,7 @@ RUN apt-get update \
         postgresql-client \
         build-essential \
         libpq-dev \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -38,6 +39,10 @@ USER appuser
 
 # Expose port
 EXPOSE $PORT
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:$PORT/health/ || exit 1
 
 # Run gunicorn
 CMD gunicorn metis_admin.wsgi:application --config gunicorn.conf.py

@@ -25,7 +25,8 @@ def redirect_to_login(request):
     return redirect('dashboard:login')
 
 def healthcheck(request):
-    return HttpResponse("OK", status=200)
+    """Simple healthcheck endpoint for Railway"""
+    return HttpResponse("OK", status=200, content_type="text/plain")
 
 urlpatterns = [
     path('admin/', admin.site.urls),

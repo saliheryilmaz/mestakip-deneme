@@ -32,9 +32,17 @@ ALLOWED_HOSTS = [
     '.up.railway.app',
     'localhost',
     '127.0.0.1',
-    '0.0.0.0',
-    '*'
+    '0.0.0.0'
 ]
+
+# Railway'den gelen host'u otomatik ekle
+RAILWAY_STATIC_URL = os.environ.get('RAILWAY_STATIC_URL')
+if RAILWAY_STATIC_URL:
+    ALLOWED_HOSTS.append(RAILWAY_STATIC_URL.replace('https://', '').replace('http://', ''))
+
+# Production'da tüm hostları kabul et (geçici)
+if not DEBUG:
+    ALLOWED_HOSTS.append('*')
 
 # Security settings for production - Railway için basitleştirildi
 if not DEBUG:
