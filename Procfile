@@ -1,1 +1,1 @@
-web: python manage.py migrate && python manage.py collectstatic --noinput && gunicorn metis_admin.wsgi --log-file -
+web: gunicorn metis_admin.wsgi

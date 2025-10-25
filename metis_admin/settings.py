@@ -27,17 +27,11 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-8gy15^z036tfb9a%#36tg
 DEBUG = True  # Hataları görebilmek için geçici olarak True
 
 # Railway deployment için güvenli host ayarları
-ALLOWED_HOSTS = [
-    '.railway.app',
-    '.up.railway.app', 
-    'localhost',
-    '127.0.0.1',
-    'web-production-71d11.up.railway.app'
-]
+ALLOWED_HOSTS = ['*']
 
-# Security settings - Railway için minimal
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = False
+# Security settings devre dışı (Railway için)
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# SECURE_SSL_REDIRECT = False
 
 # Healthcheck için basit ayarlar
 HEALTHCHECK_ENABLED = True
@@ -93,22 +87,13 @@ WSGI_APPLICATION = 'metis_admin.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# Database configuration
+# Database configuration - SQLite for simplicity
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
-# Railway PostgreSQL database (if available)
-if os.environ.get('DATABASE_URL'):
-    import dj_database_url
-    DATABASES['default'] = dj_database_url.parse(
-        os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
 
 
 # Password validation
