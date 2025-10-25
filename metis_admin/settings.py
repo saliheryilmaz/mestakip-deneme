@@ -137,20 +137,17 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
-
-# Add dist-modern/assets only if it exists (after build)
-if (BASE_DIR / 'dist-modern/assets').exists():
-    STATICFILES_DIRS.append(BASE_DIR / 'dist-modern/assets')
-else:
-    # Fallback to src-modern/assets if build didn't run
-    STATICFILES_DIRS.append(BASE_DIR / 'src-modern/assets')
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Static files directories
+STATICFILES_DIRS = []
+if (BASE_DIR / 'static').exists():
+    STATICFILES_DIRS.append(BASE_DIR / 'static')
+
+# Railway için static files ayarları
+if not DEBUG:
+    STATICFILES_DIRS = []
 
 # WhiteNoise configuration
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

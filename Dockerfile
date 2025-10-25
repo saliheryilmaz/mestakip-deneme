@@ -37,4 +37,4 @@ USER appuser
 EXPOSE $PORT
 
 # Start application
-CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn metis_admin.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 300 --log-level info"]
+CMD ["sh", "-c", "python manage.py collectstatic --noinput --clear && python manage.py migrate && gunicorn metis_admin.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 300 --access-logfile - --error-logfile -"]
