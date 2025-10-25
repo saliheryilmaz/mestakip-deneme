@@ -27,22 +27,20 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-8gy15^z036tfb9a%#36tg
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 # Railway deployment için güvenli host ayarları
-if os.environ.get('RAILWAY_STATIC_URL'):
-    ALLOWED_HOSTS = [
-        '.railway.app',
-        '.up.railway.app',
-        'localhost',
-        '127.0.0.1',
-        os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', ''),
-    ]
-else:
-    ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    '.railway.app',
+    '.up.railway.app',
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    '*'
+]
 
-# Security settings for production
+# Security settings for production - Railway için basitleştirildi
 if not DEBUG:
-    # HTTPS Settings
-    SECURE_SSL_REDIRECT = True
+    # HTTPS Settings - Railway için gerekli
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
@@ -52,29 +50,13 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = 'DENY'
     
-    # Cookie Security
+    # Cookie Security - Railway için uyumlu
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Strict'
+    SESSION_COOKIE_SAMESITE = 'Lax'  # Strict yerine Lax
     CSRF_COOKIE_SECURE = True
     CSRF_COOKIE_HTTPONLY = True
-    CSRF_COOKIE_SAMESITE = 'Strict'
-    
-    # Additional Security Headers
-    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
-    SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
-    
-    # Force HTTPS for all connections
-    SECURE_FORCE_SSL_REDIRECT = True
-
-# Railway specific security settings
-if os.environ.get('RAILWAY_STATIC_URL'):
-    # Railway'de HTTPS zorunlu
-    SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    CSRF_COOKIE_SAMESITE = 'Lax'  # Strict yerine Lax
 
 # Healthcheck için basit ayarlar
 HEALTHCHECK_ENABLED = True

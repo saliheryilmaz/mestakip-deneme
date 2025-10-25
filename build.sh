@@ -19,4 +19,8 @@ npm run build
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
+# Run migrations
+echo "Running migrations..."
+python manage.py migrate
+
 echo "Build completed successfully!"

@@ -4,19 +4,15 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "python manage.py collectstatic --noinput && python manage.py migrate && gunicorn metis_admin.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 30",
+    "startCommand": "python manage.py collectstatic --noinput && python manage.py migrate && gunicorn metis_admin.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 60 --keep-alive 2",
     "healthcheckPath": "/health/",
-    "healthcheckTimeout": 60,
+    "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 5
+    "restartPolicyMaxRetries": 3
   },
   "variables": {
     "NODE_VERSION": "20.19.0",
     "NPM_VERSION": "10.0.0",
-    "DEBUG": "False",
-    "SECURE_SSL_REDIRECT": "True",
-    "SECURE_HSTS_SECONDS": "31536000",
-    "SECURE_HSTS_INCLUDE_SUBDOMAINS": "True",
-    "SECURE_HSTS_PRELOAD": "True"
+    "DEBUG": "False"
   }
 }
