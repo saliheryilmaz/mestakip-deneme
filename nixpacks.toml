@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["python311", "python311Packages.pip", "python311Packages.setuptools", "python311Packages.wheel", "nodejs_20", "npm-10_x"]
+
+[phases.install]
+cmds = [
+    "pip install -r requirements.txt",
+    "npm install"
+]
+
+[phases.build]
+cmds = [
+    "npm run build",
+    "python manage.py collectstatic --noinput"
+]
+
+[start]
+cmd = "python manage.py migrate && gunicorn metis_admin.wsgi:application -c gunicorn.conf.py"
