@@ -76,6 +76,9 @@ if os.environ.get('RAILWAY_STATIC_URL'):
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
+# Healthcheck için basit ayarlar
+HEALTHCHECK_ENABLED = True
+
 
 # Application definition
 
