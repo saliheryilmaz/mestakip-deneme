@@ -7,11 +7,11 @@ import os
 bind = f"0.0.0.0:{os.environ.get('PORT', 8000)}"
 backlog = 2048
 
-# Worker processes
-workers = 2
+# Worker processes - Railway için optimize edildi
+workers = int(os.environ.get('WEB_CONCURRENCY', 2))
 worker_class = "sync"
 worker_connections = 1000
-timeout = 30
+timeout = 120
 keepalive = 2
 
 # Restart workers after this many requests, to help prevent memory leaks
