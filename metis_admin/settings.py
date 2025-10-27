@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-8gy15^z036tfb9a%#36tgy6ssb==3+@c1)1nh6@!fdowo$%e!n')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'  # Geçici olarak True
 
 # Railway deployment için host ayarları
 RAILWAY_STATIC_URL = os.environ.get('RAILWAY_STATIC_URL', '')
@@ -35,7 +35,9 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     '.railway.app',
     '.up.railway.app',
+    'mestakip2.up.railway.app',
     '0.0.0.0',
+    '*',  # Geçici olarak tüm hostlara izin ver
 ]
 
 # Railway domain varsa ekle
