@@ -9,6 +9,9 @@ if [ -n "$RAILWAY_ENVIRONMENT" ]; then
     echo "📊 Running migrations..."
     python manage.py migrate --noinput || echo "⚠️  Migration warning (continuing anyway)"
     
+    echo "👤 Creating auto superuser if needed..."
+    python manage.py create_auto_superuser
+    
     echo "✅ Migrations completed"
     echo "🌐 Starting Gunicorn on PORT: ${PORT:-8000}"
     
