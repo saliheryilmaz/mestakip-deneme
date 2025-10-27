@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ['python311', 'pip']
+nixPkgs = ['python311', 'pip', 'bash']
 aptPkgs = ['libsqlite3-0', 'libsqlite3-dev', 'sqlite3']
 
 [phases.install]
@@ -10,8 +10,9 @@ cmds = [
 
 [phases.build]
 cmds = [
-    'python manage.py collectstatic --noinput'
+    'python manage.py collectstatic --noinput',
+    'chmod +x railway_start.sh'
 ]
 
 [start]
-cmd = 'python manage.py migrate && gunicorn metis_admin.wsgi:application --bind 0.0.0.0:$PORT'
+cmd = 'bash railway_start.sh'

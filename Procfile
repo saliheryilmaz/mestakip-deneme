@@ -1,1 +1,1 @@
-web: python manage.py migrate && gunicorn metis_admin.wsgi:application --bind 0.0.0.0:$PORT
+web: bash railway_start.sh
