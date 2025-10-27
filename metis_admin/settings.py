@@ -115,17 +115,27 @@ import dj_database_url
 # Railway PostgreSQL veya SQLite fallback
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-# Database ayarları
-if DATABASE_URL and DATABASE_URL.startswith('postgresql://'):
-    # Geçerli PostgreSQL URL'i varsa kullan
-    try:
-        DATABASES = {
-            'default': dj_database_url.parse(DATABASE_URL)
-        }
-        print("✅ Using PostgreSQL database")
-    except ValueError as e:
-        print(f"DATABASE_URL parsing error: {e}")
-        print("Falling back to SQLite")
+# Database ayarları - Railway için güçlendirilmiş
+if DATABASE_URL:
+    # Eğer PostgreSQL URL'i varsa kullan
+    if DATABASE_URL.startswith('postgresql://') or DATABASE_URL.startswith('postgres://'):
+        try:
+            DATABASES = {
+                'default': dj_database_url.parse(DATABASE_URL)
+            }
+            print("✅ Using PostgreSQL database")
+        except Exception as e:
+            print(f"❌ DATABASE_URL parsing error: {e}")
+            print(f"DATABASE_URL value: {DATABASE_URL[:50]}...")
+            print("⚠️  Falling back to SQLite")
+            DATABASES = {
+                'default': {
+                    'ENGINE': 'django.db.backends.sqlite3',
+                    'NAME': BASE_DIR / 'db.sqlite3',
+                }
+            }
+    else:
+        print(f"⚠️  DATABASE_URL doesn't look like PostgreSQL: {DATABASE_URL[:50]}...")
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
@@ -133,7 +143,7 @@ if DATABASE_URL and DATABASE_URL.startswith('postgresql://'):
             }
         }
 else:
-    # Local development veya geçersiz DATABASE_URL için SQLite
+    # DATABASE_URL yoksa SQLite kullan
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -141,7 +151,7 @@ else:
         }
     }
     if os.environ.get('RAILWAY_ENVIRONMENT'):
-        print("⚠️  WARNING: Running on Railway but no PostgreSQL DATABASE_URL found!")
+        print("⚠️  WARNING: Running on Railway but no DATABASE_URL found!")
         print("⚠️  Please add a PostgreSQL database in Railway dashboard")
 
 # Railway deployment için PostgreSQL ayarları ve logging
