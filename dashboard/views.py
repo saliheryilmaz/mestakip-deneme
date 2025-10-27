@@ -14,10 +14,11 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from .models import Siparis, UserProfile, Event
 from .forms import SiparisForm
 
+@login_required
 def index(request):
     """Dashboard ana sayfası"""
-    # Sadece kontrol edilen siparişlerden lastik satış analizi verileri
-    kontrol_siparisler = Siparis.objects.filter(durum='kontrol')
+    # Sadece kontrol edilen siparişlerden lastik satış analizi verileri (sadece kullanıcının siparişleri)
+    kontrol_siparisler = Siparis.objects.filter(durum='kontrol', user=request.user)
     
     # Lastik satış analizi verileri - mevsim ve araç tipi bazında
     tire_sales_data = {
@@ -61,16 +62,16 @@ def index(request):
         'colors': brand_colors[:len(brand_labels)]
     }
     
-    # Son eklenen işlemler (tüm siparişlerden son 5 kayıt)
-    son_islemler = Siparis.objects.all().order_by('-olusturma_tarihi')[:5]
+    # Son eklenen işlemler (kullanıcının siparişlerinden son 5 kayıt)
+    son_islemler = Siparis.objects.filter(user=request.user).order_by('-olusturma_tarihi')[:5]
     
-    # Gerçek istatistikler - tüm siparişlerden
-    toplam_siparis = Siparis.objects.count()
-    toplam_ciro = Siparis.objects.aggregate(total=Sum('toplam_fiyat'))['total'] or 0
+    # Gerçek istatistikler - sadece kullanıcının siparişleri
+    toplam_siparis = Siparis.objects.filter(user=request.user).count()
+    toplam_ciro = Siparis.objects.filter(user=request.user).aggregate(total=Sum('toplam_fiyat'))['total'] or 0
     kontrol_edilen_siparis = kontrol_siparisler.count()
-    toplam_adet = Siparis.objects.aggregate(total=Sum('adet'))['total'] or 0
+    toplam_adet = Siparis.objects.filter(user=request.user).aggregate(total=Sum('adet'))['total'] or 0
     
-    # Aylık ciro verileri (son 12 ay)
+    # Aylık ciro verileri (son 12 ay) - sadece kullanıcının siparişleri
     from datetime import datetime, timedelta
     monthly_revenue = []
     monthly_labels = []
@@ -80,6 +81,7 @@ def index(request):
         end_date = start_date + timedelta(days=30)
         
         monthly_total = Siparis.objects.filter(
+            user=request.user,
             olusturma_tarihi__gte=start_date,
             olusturma_tarihi__lt=end_date
         ).aggregate(total=Sum('toplam_fiyat'))['total'] or 0
@@ -88,10 +90,10 @@ def index(request):
         monthly_labels.append(start_date.strftime('%b'))
     
     # En çok alım yaptığımız cariler (fiyat bazında) - Yeni Sipariş Ekle'den oluşturulan veriler
-    # Sadece kontrol edilmiş siparişlerden en çok alım yapan cariler
+    # Sadece kontrol edilmiş siparişlerden en çok alım yapan cariler (sadece kullanıcının siparişleri)
     top_customers = (
         Siparis.objects
-        .filter(durum='kontrol')  # Sadece kontrol edilmiş siparişler
+        .filter(durum='kontrol', user=request.user)  # Sadece kontrol edilmiş siparişler ve kullanıcının siparişleri
         .values('cari_firma')
         .annotate(
             total_purchase=Sum('toplam_fiyat'),
@@ -210,12 +212,13 @@ def products(request):
     }
     return render(request, 'dashboard/products.html', context)
 
+@login_required
 def orders(request):
     """Sipariş Envanteri Dashboard (Orders)"""
     # Hızlı arama (cari ile arama)
     query = request.GET.get('q', '').strip()
 
-    siparisler = Siparis.objects.all()
+    siparisler = Siparis.objects.filter(user=request.user)
     if query:
         siparisler = siparisler.filter(cari_firma__icontains=query)
 
@@ -257,6 +260,7 @@ def orders(request):
     }
     return render(request, 'dashboard/orders.html', context)
 
+@login_required
 def forms(request):
     """Kontrol Edilen Siparişler Sayfası"""
     # Filtreleme parametreleri
@@ -269,8 +273,8 @@ def forms(request):
     baslangic_tarihi = request.GET.get('baslangic_tarihi', '')
     bitis_tarihi = request.GET.get('bitis_tarihi', '')
     
-    # Sadece kontrol edilen siparişleri getir
-    siparisler = Siparis.objects.filter(durum='kontrol')
+    # Sadece kontrol edilen siparişleri getir (sadece kullanıcının siparişleri)
+    siparisler = Siparis.objects.filter(durum='kontrol', user=request.user)
     
     # Filtreleme uygula
     if firma:
@@ -372,6 +376,7 @@ def forms(request):
     }
     return render(request, 'dashboard/forms.html', context)
 
+@login_required
 def elements(request):
     """Sipariş Envanteri Listesi sayfası"""
     # Filtreleme parametreleri
@@ -385,8 +390,8 @@ def elements(request):
     baslangic_tarihi = request.GET.get('baslangic_tarihi', '')
     bitis_tarihi = request.GET.get('bitis_tarihi', '')
     
-    # Siparişleri getir (iptal edilenleri ve kontrol edilenleri hariç tut)
-    siparisler = Siparis.objects.exclude(durum__in=['iptal', 'kontrol'])
+    # Siparişleri getir (iptal edilenleri ve kontrol edilenleri hariç tut, sadece kullanıcının siparişleri)
+    siparisler = Siparis.objects.filter(user=request.user).exclude(durum__in=['iptal', 'kontrol'])
     
     # Filtreleme uygula
     if firma:
@@ -524,12 +529,16 @@ def elements_tables(request):
     }
     return render(request, 'dashboard/elements-tables.html', context)
 
+@login_required
 def yeni_lastik(request):
     """Yeni lastik ekleme sayfası"""
     if request.method == 'POST':
         form = SiparisForm(request.POST)
         if form.is_valid():
-            siparis = form.save()
+            siparis = form.save(commit=False)
+            # Kullanıcıyı otomatik ata
+            siparis.user = request.user
+            siparis.save()
             messages.success(request, f'Sipariş başarıyla kaydedildi! ID: {siparis.id}')
             return redirect('dashboard:elements')
         else:
@@ -549,18 +558,20 @@ def yeni_lastik(request):
     }
     return render(request, 'dashboard/yeni_lastik.html', context)
 
+@login_required
 def siparis_detay(request, siparis_id):
     """Sipariş detay sayfası"""
-    siparis = get_object_or_404(Siparis, id=siparis_id)
+    siparis = get_object_or_404(Siparis, id=siparis_id, user=request.user)
     context = {
         'page_title': f'Sipariş Detayı - #{siparis.id}',
         'siparis': siparis,
     }
     return render(request, 'dashboard/siparis_detay.html', context)
 
+@login_required
 def siparis_duzenle(request, siparis_id):
     """Sipariş düzenleme sayfası"""
-    siparis = get_object_or_404(Siparis, id=siparis_id)
+    siparis = get_object_or_404(Siparis, id=siparis_id, user=request.user)
     
     if request.method == 'POST':
         form = SiparisForm(request.POST, instance=siparis)
@@ -580,9 +591,10 @@ def siparis_duzenle(request, siparis_id):
     }
     return render(request, 'dashboard/siparis_duzenle.html', context)
 
+@login_required
 def siparis_sil(request, siparis_id):
     """Sipariş silme"""
-    siparis = get_object_or_404(Siparis, id=siparis_id)
+    siparis = get_object_or_404(Siparis, id=siparis_id, user=request.user)
     
     if request.method == 'POST':
         siparis_id = siparis.id
@@ -596,9 +608,10 @@ def siparis_sil(request, siparis_id):
     }
     return render(request, 'dashboard/siparis_sil.html', context)
 
+@login_required
 def siparis_whatsapp(request, siparis_id):
     """WhatsApp mesajı gönder"""
-    siparis = get_object_or_404(Siparis, id=siparis_id)
+    siparis = get_object_or_404(Siparis, id=siparis_id, user=request.user)
     
     # WhatsApp mesajı oluştur
     mesaj = f"""*Lastik Envanteri - {siparis.cari_firma}*
@@ -615,6 +628,7 @@ def siparis_whatsapp(request, siparis_id):
     
     return redirect(whatsapp_url)
 
+@login_required
 def reports(request):
     """İptal Edilen Siparişler Raporu"""
     # Filtreleme parametreleri
@@ -627,8 +641,8 @@ def reports(request):
     baslangic_tarihi = request.GET.get('baslangic_tarihi', '')
     bitis_tarihi = request.GET.get('bitis_tarihi', '')
     
-    # Sadece iptal edilen siparişleri getir
-    siparisler = Siparis.objects.filter(durum='iptal')
+    # Sadece iptal edilen siparişleri getir (sadece kullanıcının siparişleri)
+    siparisler = Siparis.objects.filter(durum='iptal', user=request.user)
     
     # Filtreleme uygula
     if firma:
@@ -908,6 +922,7 @@ def help(request):
     }
     return render(request, 'dashboard/help.html', context)
 
+@login_required
 def export_excel(request):
     """Sipariş Envanterini Excel'e aktar"""
     # Filtreleme parametrelerini al
@@ -921,8 +936,8 @@ def export_excel(request):
     baslangic_tarihi = request.GET.get('baslangic_tarihi', '')
     bitis_tarihi = request.GET.get('bitis_tarihi', '')
     
-    # Siparişleri filtrele (iptal edilenleri ve kontrol edilenleri hariç tut)
-    siparisler = Siparis.objects.exclude(durum__in=['iptal', 'kontrol'])
+    # Siparişleri filtrele (iptal edilenleri ve kontrol edilenleri hariç tut, sadece kullanıcının siparişleri)
+    siparisler = Siparis.objects.filter(user=request.user).exclude(durum__in=['iptal', 'kontrol'])
     
     if firma:
         siparisler = siparisler.filter(cari_firma__icontains=firma)
@@ -1043,6 +1058,7 @@ def export_excel(request):
     wb.save(response)
     return response
 
+@login_required
 def export_cancelled_excel(request):
     """İptal Edilen Siparişleri Excel'e aktar"""
     # Filtreleme parametrelerini al
@@ -1055,8 +1071,8 @@ def export_cancelled_excel(request):
     baslangic_tarihi = request.GET.get('baslangic_tarihi', '')
     bitis_tarihi = request.GET.get('bitis_tarihi', '')
     
-    # Sadece iptal edilen siparişleri filtrele
-    siparisler = Siparis.objects.filter(durum='iptal')
+    # Sadece iptal edilen siparişleri filtrele (sadece kullanıcının siparişleri)
+    siparisler = Siparis.objects.filter(durum='iptal', user=request.user)
     
     if firma:
         siparisler = siparisler.filter(cari_firma__icontains=firma)
@@ -1175,6 +1191,7 @@ def export_cancelled_excel(request):
     wb.save(response)
     return response
 
+@login_required
 def export_checked_excel(request):
     """Kontrol Edilen Siparişleri Excel'e aktar"""
     # Filtreleme parametrelerini al
@@ -1187,8 +1204,8 @@ def export_checked_excel(request):
     baslangic_tarihi = request.GET.get('baslangic_tarihi', '')
     bitis_tarihi = request.GET.get('bitis_tarihi', '')
     
-    # Sadece kontrol edilen siparişleri filtrele
-    siparisler = Siparis.objects.filter(durum='kontrol')
+    # Sadece kontrol edilen siparişleri filtrele (sadece kullanıcının siparişleri)
+    siparisler = Siparis.objects.filter(durum='kontrol', user=request.user)
     
     if firma:
         siparisler = siparisler.filter(cari_firma__icontains=firma)
@@ -1339,3 +1356,241 @@ def logout_view(request):
         logout(request)
         messages.success(request, f'Güle güle, {username}!')
     return redirect('dashboard:login')
+
+# Bildirim API'leri
+from .models import Notification
+
+@login_required
+def get_notifications(request):
+    """Kullanıcının bildirimlerini getiren API endpoint'i"""
+    try:
+        # Kullanıcının bildirimlerini getir
+        notifications = Notification.objects.filter(user=request.user).order_by('-scheduled_time')[:20]
+        
+        notifications_data = []
+        for notification in notifications:
+            notifications_data.append({
+                'id': notification.id,
+                'title': notification.title,
+                'message': notification.message,
+                'type': notification.type,
+                'status': notification.status,
+                'icon': notification.get_type_icon(),
+                'color': notification.get_type_color(),
+                'scheduled_time': notification.scheduled_time.isoformat(),
+                'sent_time': notification.sent_time.isoformat() if notification.sent_time else None,
+                'read_time': notification.read_time.isoformat() if notification.read_time else None,
+                'event_id': notification.event.id if notification.event else None,
+                'is_overdue': notification.is_overdue(),
+                'extra_data': notification.get_extra_data_dict()
+            })
+        
+        # Okunmamış bildirim sayısı
+        unread_count = Notification.objects.filter(
+            user=request.user, 
+            status__in=['pending', 'sent']
+        ).count()
+        
+        return JsonResponse({
+            'success': True,
+            'notifications': notifications_data,
+            'unread_count': unread_count
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+@login_required
+def mark_notification_read(request, notification_id):
+    """Bildirimi okundu olarak işaretle"""
+    try:
+        notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+        notification.mark_as_read()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Bildirim okundu olarak işaretlendi'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+@login_required
+def mark_all_notifications_read(request):
+    """Tüm bildirimleri okundu olarak işaretle"""
+    try:
+        notifications = Notification.objects.filter(
+            user=request.user, 
+            status__in=['pending', 'sent']
+        )
+        
+        for notification in notifications:
+            notification.mark_as_read()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'{notifications.count()} bildirim okundu olarak işaretlendi'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+@login_required
+def dismiss_notification(request, notification_id):
+    """Bildirimi kapat"""
+    try:
+        notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+        notification.status = 'dismissed'
+        notification.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Bildirim kapatıldı'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+def create_event_notifications(event):
+    """Etkinlik için bildirimler oluştur"""
+    from datetime import datetime, timedelta
+    
+    try:
+        # Hatırlatıcı zamanlarını parse et
+        reminders = json.loads(event.reminders) if event.reminders else ['15']
+        
+        # Etkinlik tarih ve saatini birleştir
+        event_datetime = timezone.make_aware(
+            datetime.combine(event.date, event.time)
+        )
+        
+        # Her hatırlatıcı için bildirim oluştur
+        for reminder_minutes in reminders:
+            try:
+                minutes = int(reminder_minutes)
+                reminder_time = event_datetime - timedelta(minutes=minutes)
+                
+                # Geçmiş tarih kontrolü
+                if reminder_time > timezone.now():
+                    # Hatırlatıcı bildirimi oluştur
+                    Notification.objects.create(
+                        title=f"Etkinlik Hatırlatıcısı: {event.title}",
+                        message=f"{event.title} etkinliği {minutes} dakika sonra başlayacak. Konum: {event.location or 'Belirtilmemiş'}",
+                        type='event_reminder',
+                        event=event,
+                        user=event.created_by,
+                        scheduled_time=reminder_time,
+                        extra_data=json.dumps({
+                            'event_id': event.id,
+                            'reminder_minutes': minutes,
+                            'event_type': event.type,
+                            'event_priority': event.priority
+                        })
+                    )
+            except (ValueError, TypeError):
+                continue
+        
+        # Etkinlik başlangıç bildirimi
+        if event_datetime > timezone.now():
+            Notification.objects.create(
+                title=f"Etkinlik Başlıyor: {event.title}",
+                message=f"{event.title} etkinliği şimdi başlıyor! Süre: {event.get_duration_display()}",
+                type='event_start',
+                event=event,
+                user=event.created_by,
+                scheduled_time=event_datetime,
+                extra_data=json.dumps({
+                    'event_id': event.id,
+                    'event_type': event.type,
+                    'event_priority': event.priority,
+                    'duration': event.duration
+                })
+            )
+            
+    except Exception as e:
+        print(f"Bildirim oluşturma hatası: {e}")
+
+# Etkinlik oluşturma view'ını güncelle
+@login_required
+def create_event(request):
+    """Etkinlik oluşturma API endpoint'i"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Gerekli alanları kontrol et
+            required_fields = ['title', 'date', 'time']
+            for field in required_fields:
+                if not data.get(field):
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'{field} alanı gereklidir'
+                    }, status=400)
+            
+            # Tarih ve saat verilerini parse et
+            from datetime import datetime
+            date_obj = datetime.strptime(data['date'], '%Y-%m-%d').date()
+            time_obj = datetime.strptime(data['time'], '%H:%M').time()
+            
+            # Etkinlik oluştur
+            event = Event.objects.create(
+                title=data['title'],
+                description=data.get('description', ''),
+                type=data.get('type', 'event'),
+                priority=data.get('priority', 'medium'),
+                date=date_obj,
+                time=time_obj,
+                duration=int(data.get('duration', 60)),
+                location=data.get('location', ''),
+                attendees=data.get('attendees', ''),
+                recurring=data.get('recurring', False),
+                recurrence=data.get('recurrence', 'none'),
+                reminders=json.dumps(data.get('reminders', ['15'])),
+                created_by=request.user
+            )
+            
+            # Bildirimler oluştur
+            create_event_notifications(event)
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Etkinlik ve hatırlatıcılar başarıyla oluşturuldu!',
+                'event': {
+                    'id': event.id,
+                    'title': event.title,
+                    'type': event.type,
+                    'date': event.date.strftime('%Y-%m-%d'),
+                    'time': event.time.strftime('%H:%M'),
+                    'description': event.description,
+                    'location': event.location,
+                    'duration': event.get_duration_display()
+                }
+            })
+            
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Geçersiz JSON verisi'
+            }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Sadece POST istekleri kabul edilir'
+    }, status=405)

@@ -2,6 +2,7 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
 from django.contrib.auth.models import User
+import json
 
 class UserProfile(models.Model):
     """Kullanıcı profil modeli - rol yönetimi için"""
@@ -71,6 +72,9 @@ class Siparis(models.Model):
         ('satis', 'Satış'),
     ]
     
+    # Kullanıcı bilgisi - Her sipariş bir kullanıcıya ait
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Kullanıcı", related_name='siparisler', null=True, blank=True)
+    
     # Temel Bilgiler
     cari_firma = models.CharField(max_length=200, verbose_name="CARI (FIRMA)")
     marka = models.CharField(max_length=100, verbose_name="MARKA")
@@ -109,6 +113,7 @@ class Siparis(models.Model):
     # Ek Bilgiler
     aciklama = models.TextField(blank=True, null=True, verbose_name="AÇIKLAMA")
     one_cikar = models.BooleanField(default=False, verbose_name="ÖNE ÇIKAR")
+    iptal_sebebi = models.TextField(blank=True, null=True, verbose_name="İPTAL SEBEBİ")
     
     # Zaman Damgaları
     olusturma_tarihi = models.DateTimeField(auto_now_add=True, verbose_name="Oluşturma Tarihi")
@@ -261,3 +266,109 @@ class Event(models.Model):
             return f'{hours} saat'
         else:
             return f'{hours}s {minutes}d'
+
+class Notification(models.Model):
+    """Bildirim modeli - Etkinlik hatırlatıcıları ve sistem bildirimleri"""
+    
+    TYPE_CHOICES = [
+        ('event_reminder', 'Etkinlik Hatırlatıcısı'),
+        ('event_start', 'Etkinlik Başlangıcı'),
+        ('system', 'Sistem Bildirimi'),
+        ('info', 'Bilgi'),
+        ('warning', 'Uyarı'),
+        ('error', 'Hata'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Bekliyor'),
+        ('sent', 'Gönderildi'),
+        ('read', 'Okundu'),
+        ('dismissed', 'Kapatıldı'),
+    ]
+    
+    # Temel Bilgiler
+    title = models.CharField(max_length=200, verbose_name="Başlık")
+    message = models.TextField(verbose_name="Mesaj")
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='info', verbose_name="Tür")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="Durum")
+    
+    # İlişkili Etkinlik (opsiyonel)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, blank=True, null=True, verbose_name="İlişkili Etkinlik")
+    
+    # Hedef Kullanıcı
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Kullanıcı")
+    
+    # Zamanlar
+    scheduled_time = models.DateTimeField(verbose_name="Planlanmış Zaman")
+    sent_time = models.DateTimeField(blank=True, null=True, verbose_name="Gönderilme Zamanı")
+    read_time = models.DateTimeField(blank=True, null=True, verbose_name="Okunma Zamanı")
+    
+    # Ek Veriler (JSON formatında)
+    extra_data = models.TextField(blank=True, null=True, verbose_name="Ek Veriler")
+    
+    # Zaman Damgaları
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Oluşturulma Tarihi")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Güncellenme Tarihi")
+    
+    class Meta:
+        verbose_name = "Bildirim"
+        verbose_name_plural = "Bildirimler"
+        ordering = ['-scheduled_time']
+    
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
+    
+    def get_type_icon(self):
+        """Bildirim türü için ikon döndür"""
+        icons = {
+            'event_reminder': 'bi-bell',
+            'event_start': 'bi-calendar-event',
+            'system': 'bi-gear',
+            'info': 'bi-info-circle',
+            'warning': 'bi-exclamation-triangle',
+            'error': 'bi-x-circle',
+        }
+        return icons.get(self.type, 'bi-bell')
+    
+    def get_type_color(self):
+        """Bildirim türü için renk döndür"""
+        colors = {
+            'event_reminder': '#3b82f6',
+            'event_start': '#10b981',
+            'system': '#6b7280',
+            'info': '#06b6d4',
+            'warning': '#f59e0b',
+            'error': '#ef4444',
+        }
+        return colors.get(self.type, '#6b7280')
+    
+    def mark_as_read(self):
+        """Bildirimi okundu olarak işaretle"""
+        if self.status != 'read':
+            self.status = 'read'
+            self.read_time = timezone.now()
+            self.save()
+    
+    def mark_as_sent(self):
+        """Bildirimi gönderildi olarak işaretle"""
+        if self.status == 'pending':
+            self.status = 'sent'
+            self.sent_time = timezone.now()
+            self.save()
+    
+    def is_overdue(self):
+        """Bildirimin zamanı geçmiş mi kontrol et"""
+        return timezone.now() > self.scheduled_time and self.status == 'pending'
+    
+    def get_extra_data_dict(self):
+        """Ek verileri dict olarak döndür"""
+        if self.extra_data:
+            try:
+                return json.loads(self.extra_data)
+            except json.JSONDecodeError:
+                return {}
+        return {}
+    
+    def set_extra_data(self, data_dict):
+        """Ek verileri dict'ten JSON'a çevir"""
+        self.extra_data = json.dumps(data_dict) if data_dict else None

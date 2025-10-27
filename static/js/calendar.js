@@ -618,12 +618,17 @@ document.addEventListener('alpine:init', () => {
           if (typeof Swal !== 'undefined') {
             Swal.fire({
               title: 'Etkinlik Oluşturuldu!',
-              text: `"${this.eventData.title}" etkinliği ${this.eventData.date} tarihinde ${this.eventData.time} saatinde oluşturuldu.`,
+              text: `"${this.eventData.title}" etkinliği ${this.eventData.date} tarihinde ${this.eventData.time} saatinde oluşturuldu. Hatırlatıcılar da ayarlandı.`,
               icon: 'success',
               confirmButtonText: 'Tamam'
             });
           } else {
             alert(`Etkinlik "${this.eventData.title}" başarıyla oluşturuldu!`);
+          }
+          
+          // Bildirim sistemini güncelle
+          if (window.notificationSystem) {
+            window.notificationSystem.loadNotifications();
           }
           
           // Modal'ı kapat ve formu sıfırla

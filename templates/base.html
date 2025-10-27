@@ -261,23 +261,34 @@
                         </button>
 
                         <!-- Notifications -->
-                        <div class="dropdown me-2">
+                        <div class="dropdown me-2" id="notificationDropdown">
                             <button class="btn btn-outline-secondary position-relative" 
                                     type="button" 
                                     data-bs-toggle="dropdown" 
-                                    aria-expanded="false">
+                                    aria-expanded="false"
+                                    id="notificationButton">
                                 <i class="bi bi-bell"></i>
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                    3
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                                      id="notificationBadge" style="display: none;">
+                                    0
                                 </span>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><h6 class="dropdown-header">Notifications</h6></li>
-                                <li><a class="dropdown-item" href="#">New user registered</a></li>
-                                <li><a class="dropdown-item" href="#">Server status update</a></li>
-                                <li><a class="dropdown-item" href="#">New message received</a></li>
+                            <ul class="dropdown-menu dropdown-menu-end" style="width: 350px; max-height: 400px; overflow-y: auto;">
+                                <li class="dropdown-header d-flex justify-content-between align-items-center">
+                                    <span>Bildirimler</span>
+                                    <button class="btn btn-sm btn-link text-primary p-0" 
+                                            id="markAllReadBtn" 
+                                            style="font-size: 0.75rem;">
+                                        Tümünü Okundu İşaretle
+                                    </button>
+                                </li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-center" href="#">View all notifications</a></li>
+                                <div id="notificationList">
+                                    <li class="dropdown-item text-center text-muted py-3">
+                                        <i class="bi bi-bell-slash fs-4 d-block mb-2"></i>
+                                        Henüz bildirim yok
+                                    </li>
+                                </div>
                             </ul>
                         </div>
 
@@ -395,14 +406,14 @@
                             <a class="nav-link" href="{% url 'dashboard:forms' %}">
                                 <i class="bi bi-ui-checks"></i>
                                 <span>Kontrol Edilen Siparişler</span>
-                                <span class="badge bg-success rounded-pill ms-auto">New</span>
+                                
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'dashboard:elements' %}">
                                 <i class="bi bi-box-seam"></i>
                                 <span>Sipariş Envanteri</span>
-                                <span class="badge bg-success rounded-pill ms-auto">5</span>
+                                
                             </a>
                         </li>
                         <li class="nav-item">
@@ -415,7 +426,7 @@
                             <a class="nav-link" href="{% url 'dashboard:messages' %}">
                                 <i class="bi bi-chat-dots"></i>
                                 <span>Messages</span>
-                                <span class="badge bg-danger rounded-pill ms-auto">3</span>
+                             
                             </a>
                         </li>
                         <li class="nav-item">
@@ -577,6 +588,55 @@
         }
     });
     </script>
+
+    <!-- Fullscreen Toggle Script -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fullscreenToggleButton = document.querySelector('[data-fullscreen-toggle]');
+        
+        if (fullscreenToggleButton) {
+            fullscreenToggleButton.addEventListener('click', function() {
+                toggleFullscreen();
+            });
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                // Tam ekrana geç
+                document.documentElement.requestFullscreen().then(() => {
+                    updateFullscreenIcon(true);
+                }).catch(err => {
+                    console.log('Tam ekran modu desteklenmiyor:', err);
+                });
+            } else {
+                // Tam ekrandan çık
+                document.exitFullscreen().then(() => {
+                    updateFullscreenIcon(false);
+                }).catch(err => {
+                    console.log('Tam ekrandan çıkma hatası:', err);
+                });
+            }
+        }
+        
+        function updateFullscreenIcon(isFullscreen) {
+            const icon = fullscreenToggleButton?.querySelector('i');
+            if (icon) {
+                if (isFullscreen) {
+                    icon.className = 'bi bi-fullscreen-exit icon-hover';
+                    fullscreenToggleButton.setAttribute('title', 'Tam Ekrandan Çık');
+                } else {
+                    icon.className = 'bi bi-arrows-fullscreen icon-hover';
+                    fullscreenToggleButton.setAttribute('title', 'Tam Ekran');
+                }
+            }
+        }
+        
+        // Fullscreen değişikliklerini dinle (ESC tuşu vs.)
+        document.addEventListener('fullscreenchange', function() {
+            updateFullscreenIcon(!!document.fullscreenElement);
+        });
+    });
+    </script>
     
     <!-- Animation Keyframes -->
     <style>
@@ -696,6 +756,361 @@
     [data-bs-theme="dark"] canvas {
         filter: brightness(0.9) contrast(1.1);
     }
+    
+    /* Bildirim stilleri */
+    .notification-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e2e8f0;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .notification-item:hover {
+        background-color: #f8fafc;
+    }
+    
+    .notification-item.unread {
+        background-color: #eff6ff;
+        border-left: 3px solid #3b82f6;
+    }
+    
+    .notification-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: white;
+        margin-right: 12px;
+    }
+    
+    .notification-content {
+        flex: 1;
+    }
+    
+    .notification-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: #1e293b;
+    }
+    
+    .notification-message {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 4px;
+        line-height: 1.4;
+    }
+    
+    .notification-time {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+    
+    .notification-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+    }
+    
+    .notification-actions .btn {
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+    
+    [data-bs-theme="dark"] .notification-item {
+        border-bottom-color: #334155;
+    }
+    
+    [data-bs-theme="dark"] .notification-item:hover {
+        background-color: #334155;
+    }
+    
+    [data-bs-theme="dark"] .notification-item.unread {
+        background-color: #1e3a8a;
+        border-left-color: #3b82f6;
+    }
+    
+    [data-bs-theme="dark"] .notification-title {
+        color: #ffffff;
+    }
+    
+    [data-bs-theme="dark"] .notification-message {
+        color: #cbd5e1;
+    }
+    
+    [data-bs-theme="dark"] .notification-time {
+        color: #94a3b8;
+    }
     </style>
+
+    <!-- Bildirim Sistemi JavaScript -->
+    <script>
+    class NotificationSystem {
+        constructor() {
+            this.notifications = [];
+            this.unreadCount = 0;
+            this.checkInterval = 30000; // 30 saniye
+            this.init();
+        }
+        
+        init() {
+            this.loadNotifications();
+            this.setupEventListeners();
+            this.startPeriodicCheck();
+        }
+        
+        setupEventListeners() {
+            // Tümünü okundu işaretle butonu
+            const markAllReadBtn = document.getElementById('markAllReadBtn');
+            if (markAllReadBtn) {
+                markAllReadBtn.addEventListener('click', () => {
+                    this.markAllAsRead();
+                });
+            }
+            
+            // Bildirim dropdown açıldığında
+            const notificationButton = document.getElementById('notificationButton');
+            if (notificationButton) {
+                notificationButton.addEventListener('click', () => {
+                    this.loadNotifications();
+                });
+            }
+        }
+        
+        async loadNotifications() {
+            try {
+                const response = await fetch('/dashboard/api/notifications/');
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.notifications = data.notifications;
+                    this.unreadCount = data.unread_count;
+                    this.updateUI();
+                }
+            } catch (error) {
+                console.error('Bildirimler yüklenirken hata:', error);
+            }
+        }
+        
+        updateUI() {
+            this.updateBadge();
+            this.updateNotificationList();
+        }
+        
+        updateBadge() {
+            const badge = document.getElementById('notificationBadge');
+            if (badge) {
+                if (this.unreadCount > 0) {
+                    badge.textContent = this.unreadCount;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+        
+        updateNotificationList() {
+            const listContainer = document.getElementById('notificationList');
+            if (!listContainer) return;
+            
+            if (this.notifications.length === 0) {
+                listContainer.innerHTML = `
+                    <li class="dropdown-item text-center text-muted py-3">
+                        <i class="bi bi-bell-slash fs-4 d-block mb-2"></i>
+                        Henüz bildirim yok
+                    </li>
+                `;
+                return;
+            }
+            
+            let html = '';
+            this.notifications.forEach(notification => {
+                const isUnread = notification.status === 'pending' || notification.status === 'sent';
+                const timeAgo = this.getTimeAgo(notification.scheduled_time);
+                
+                html += `
+                    <li class="notification-item ${isUnread ? 'unread' : ''}" 
+                        data-notification-id="${notification.id}">
+                        <div class="d-flex">
+                            <div class="notification-icon" style="background-color: ${notification.color}">
+                                <i class="${notification.icon}"></i>
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-title">${notification.title}</div>
+                                <div class="notification-message">${notification.message}</div>
+                                <div class="notification-time">${timeAgo}</div>
+                                ${isUnread ? `
+                                    <div class="notification-actions">
+                                        <button class="btn btn-sm btn-primary" onclick="notificationSystem.markAsRead(${notification.id})">
+                                            Okundu İşaretle
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="notificationSystem.dismiss(${notification.id})">
+                                            Kapat
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </li>
+                `;
+            });
+            
+            listContainer.innerHTML = html;
+        }
+        
+        async markAsRead(notificationId) {
+            try {
+                const response = await fetch(`/dashboard/api/notifications/${notificationId}/read/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': this.getCSRFToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.loadNotifications();
+                    this.showToast('Bildirim okundu olarak işaretlendi', 'success');
+                }
+            } catch (error) {
+                console.error('Bildirim işaretlenirken hata:', error);
+                this.showToast('Bir hata oluştu', 'error');
+            }
+        }
+        
+        async markAllAsRead() {
+            try {
+                const response = await fetch('/dashboard/api/notifications/read-all/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': this.getCSRFToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.loadNotifications();
+                    this.showToast(data.message, 'success');
+                }
+            } catch (error) {
+                console.error('Bildirimler işaretlenirken hata:', error);
+                this.showToast('Bir hata oluştu', 'error');
+            }
+        }
+        
+        async dismiss(notificationId) {
+            try {
+                const response = await fetch(`/dashboard/api/notifications/${notificationId}/dismiss/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': this.getCSRFToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.loadNotifications();
+                    this.showToast('Bildirim kapatıldı', 'success');
+                }
+            } catch (error) {
+                console.error('Bildirim kapatılırken hata:', error);
+                this.showToast('Bir hata oluştu', 'error');
+            }
+        }
+        
+        startPeriodicCheck() {
+            setInterval(() => {
+                this.loadNotifications();
+            }, this.checkInterval);
+        }
+        
+        getTimeAgo(dateString) {
+            const now = new Date();
+            const date = new Date(dateString);
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+            
+            if (diffMins < 1) return 'Şimdi';
+            if (diffMins < 60) return `${diffMins} dakika önce`;
+            if (diffHours < 24) return `${diffHours} saat önce`;
+            if (diffDays < 7) return `${diffDays} gün önce`;
+            
+            return date.toLocaleDateString('tr-TR');
+        }
+        
+        getCSRFToken() {
+            const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                         document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
+            if (!token) {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'csrftoken') {
+                        return value;
+                    }
+                }
+            }
+            
+            return token;
+        }
+        
+        showToast(message, type = 'info') {
+            // SweetAlert2 kullanarak toast göster
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: message,
+                    icon: type === 'success' ? 'success' : type === 'error' ? 'error' : 'info',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            } else {
+                // Fallback olarak alert kullan
+                alert(message);
+            }
+        }
+        
+        // Yeni bildirim geldiğinde çağrılacak
+        addNotification(notification) {
+            this.notifications.unshift(notification);
+            this.unreadCount++;
+            this.updateUI();
+            
+            // Tarayıcı bildirimi göster (izin varsa)
+            if (Notification.permission === 'granted') {
+                new Notification(notification.title, {
+                    body: notification.message,
+                    icon: '/static/images/logo.svg'
+                });
+            }
+        }
+        
+        // Tarayıcı bildirim izni iste
+        requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+    }
+    
+    // Sayfa yüklendiğinde bildirim sistemini başlat
+    document.addEventListener('DOMContentLoaded', function() {
+        window.notificationSystem = new NotificationSystem();
+        
+        // Tarayıcı bildirim izni iste
+        window.notificationSystem.requestNotificationPermission();
+    });
+    </script>
 </body>
 </html>

@@ -33,6 +33,11 @@ urlpatterns = [
     path('calendar/', views.calendar, name='calendar'),
     path('api/events/create/', views.create_event, name='create_event'),
     path('api/events/', views.get_events, name='get_events'),
+    # Bildirim API'leri
+    path('api/notifications/', views.get_notifications, name='get_notifications'),
+    path('api/notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
+    path('api/notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('api/notifications/<int:notification_id>/dismiss/', views.dismiss_notification, name='dismiss_notification'),
     path('files/', views.files, name='files'),
     path('settings/', views.settings, name='settings'),
     path('security/', views.security, name='security'),

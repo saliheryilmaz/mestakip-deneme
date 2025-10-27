@@ -11,24 +11,21 @@
         <p class="text-muted mb-0">Welcome back! Here's what's happening.</p>
     </div>
     <div class="d-flex gap-2">
-        <button type="button" class="btn btn-primary">
+        <a href="{% url 'dashboard:yeni_lastik' %}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-2"></i>
-            New Item
-        </button>
-        <button type="button" class="btn btn-outline-secondary" 
-                data-bs-toggle="tooltip" 
-                title="Refresh data">
+            Yeni Sipariş Ekle
+        </a>
+        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Sayfayı Yenile"
+            onclick="location.reload()">
             <i class="bi bi-arrow-clockwise icon-hover"></i>
         </button>
-        <button type="button" class="btn btn-outline-secondary" 
-                data-bs-toggle="tooltip" 
-                title="Export data">
+        <a href="{% url 'dashboard:export_excel' %}" class="btn btn-outline-secondary" data-bs-toggle="tooltip"
+            title="Excel'e Aktar">
             <i class="bi bi-download icon-hover"></i>
-        </button>
-        <button type="button" class="btn btn-outline-secondary" 
-                data-bs-toggle="tooltip" 
-                title="Settings">
-            <i class="bi bi-gear icon-hover"></i>
+        </a>
+        <button type="button" class="btn btn-outline-secondary" data-fullscreen-toggle data-bs-toggle="tooltip"
+            title="Tam Ekran">
+            <i class="bi bi-arrows-fullscreen icon-hover"></i>
         </button>
     </div>
 </div>
@@ -207,12 +204,16 @@
                                 <td class="text-end">{{ s.adet }}</td>
                                 <td class="text-end">₺{{ s.birim_fiyat|floatformat:2 }}</td>
                                 <td class="text-end">₺{{ s.toplam_fiyat|floatformat:2 }}</td>
-                                <td><span class="badge bg-{{ s.get_durum_display_color }}">{{ s.get_durum_display }}</span></td>
+                                <td><span class="badge bg-{{ s.get_durum_display_color }}">{{ s.get_durum_display
+                                        }}</span></td>
                                 <td><span class="badge bg-secondary">{{ s.get_ambar_display }}</span></td>
                                 <td class="text-end">
-                                    <a class="btn btn-sm btn-outline-primary" href="{% url 'dashboard:siparis_detay' s.id %}">Detay</a>
-                                    <a class="btn btn-sm btn-outline-warning" href="{% url 'dashboard:siparis_duzenle' s.id %}">Düzenle</a>
-                                    <a class="btn btn-sm btn-outline-success" href="{% url 'dashboard:siparis_whatsapp' s.id %}">WhatsApp</a>
+                                    <a class="btn btn-sm btn-outline-primary"
+                                        href="{% url 'dashboard:siparis_detay' s.id %}">Detay</a>
+                                    <a class="btn btn-sm btn-outline-warning"
+                                        href="{% url 'dashboard:siparis_duzenle' s.id %}">Düzenle</a>
+                                    <a class="btn btn-sm btn-outline-success"
+                                        href="{% url 'dashboard:siparis_whatsapp' s.id %}">WhatsApp</a>
                                 </td>
                             </tr>
                             {% empty %}
@@ -237,7 +238,8 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <h5 class="card-title mb-1">En Çok Alım Yaptığımız Cariler</h5>
-                        <small class="text-muted">Yeni Sipariş Ekle'den oluşturulan veriler - Fiyat bazında sıralama</small>
+                        <small class="text-muted">Yeni Sipariş Ekle'den oluşturulan veriler - Fiyat bazında
+                            sıralama</small>
                     </div>
                     <span class="badge bg-success">Kontrol Edilmiş</span>
                 </div>
@@ -252,336 +254,336 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Dashboard loaded');
-    
-    // Revenue Chart
-    const revenueCtx = document.getElementById('revenueChart');
-    if (revenueCtx) {
-        const monthlyRevenue = JSON.parse('{{ monthly_revenue|escapejs }}');
-        const monthlyLabels = JSON.parse('{{ monthly_labels|escapejs }}');
-        
-        const revenueChart = new Chart(revenueCtx, {
-            type: 'line',
-            data: {
-                labels: monthlyLabels,
-                datasets: [{
-                    label: 'Ciro (₺)',
-                    data: monthlyRevenue,
-                    borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('Dashboard loaded');
+
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart');
+        if (revenueCtx) {
+            const monthlyRevenue = JSON.parse('{{ monthly_revenue|escapejs }}');
+            const monthlyLabels = JSON.parse('{{ monthly_labels|escapejs }}');
+
+            const revenueChart = new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: monthlyLabels,
+                    datasets: [{
+                        label: 'Ciro (₺)',
+                        data: monthlyRevenue,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0,0,0,0.1)'
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
                         }
                     },
-                    x: {
-                        grid: {
-                            display: false
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
                         }
                     }
                 }
-            }
-        });
-    }
+            });
+        }
 
-    // Lastik Satış Analizi Chart (3D Bar Chart)
-    const tireSalesCtx = document.getElementById('tireSalesChart');
-    if (tireSalesCtx) {
-        const tireSalesData = JSON.parse('{{ tire_sales_data|escapejs }}');
-        
-        const tireSalesChart = new Chart(tireSalesCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Yaz', 'Kış', '4 Mevsim'],
-                datasets: [{
-                    label: 'Binek',
-                    data: [
-                        tireSalesData.yaz.binek,
-                        tireSalesData.kis.binek,
-                        tireSalesData.dort_mevsim.binek
-                    ],
-                    backgroundColor: 'rgba(99, 102, 241, 0.8)',
-                    borderColor: '#6366f1',
-                    borderWidth: 2,
-                    borderRadius: 6,
-                    borderSkipped: false,
-                }, {
-                    label: 'Ticari',
-                    data: [
-                        tireSalesData.yaz.ticari,
-                        tireSalesData.kis.ticari,
-                        tireSalesData.dort_mevsim.ticari
-                    ],
-                    backgroundColor: 'rgba(236, 72, 153, 0.8)',
-                    borderColor: '#ec4899',
-                    borderWidth: 2,
-                    borderRadius: 6,
-                    borderSkipped: false,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Lastik Satış Analizi - Mevsim ve Araç Tipi',
-                        font: {
-                            size: 14,
-                            weight: 'bold'
-                        }
-                    },
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 20,
-                            font: {
-                                size: 12
-                            }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const vehicleType = context.dataset.label;
-                                const value = context.parsed.y;
-                                return `${vehicleType}: ${value} adet`;
-                            }
-                        }
-                    }
+        // Lastik Satış Analizi Chart (3D Bar Chart)
+        const tireSalesCtx = document.getElementById('tireSalesChart');
+        if (tireSalesCtx) {
+            const tireSalesData = JSON.parse('{{ tire_sales_data|escapejs }}');
+
+            const tireSalesChart = new Chart(tireSalesCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Yaz', 'Kış', '4 Mevsim'],
+                    datasets: [{
+                        label: 'Binek',
+                        data: [
+                            tireSalesData.yaz.binek,
+                            tireSalesData.kis.binek,
+                            tireSalesData.dort_mevsim.binek
+                        ],
+                        backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                        borderColor: '#6366f1',
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }, {
+                        label: 'Ticari',
+                        data: [
+                            tireSalesData.yaz.ticari,
+                            tireSalesData.kis.ticari,
+                            tireSalesData.dort_mevsim.ticari
+                        ],
+                        backgroundColor: 'rgba(236, 72, 153, 0.8)',
+                        borderColor: '#ec4899',
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 16,
-                        ticks: {
-                            stepSize: 2,
-                            callback: function(value) {
-                                return value;
-                            }
-                        },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
                         title: {
                             display: true,
-                            text: 'Satılan Adet',
+                            text: 'Lastik Satış Analizi - Mevsim ve Araç Tipi',
                             font: {
-                                size: 12,
+                                size: 14,
                                 weight: 'bold'
                             }
                         },
-                        grid: {
-                            color: 'rgba(0,0,0,0.1)',
-                            drawBorder: false
-                        }
-                    },
-                    x: {
-                        title: {
+                        legend: {
                             display: true,
-                            text: 'Mevsim',
-                            font: {
-                                size: 12,
-                                weight: 'bold'
-                            }
-                        },
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                }
-            }
-        });
-    }
-
-    // Lastik Marka Dağılımı Chart (Doughnut)
-    const orderStatusCtx = document.getElementById('orderStatusChart');
-    if (orderStatusCtx) {
-        const brandChartData = JSON.parse('{{ brand_chart_data|escapejs }}');
-        
-        const brandChart = new Chart(orderStatusCtx, {
-            type: 'doughnut',
-            data: {
-                labels: brandChartData.labels,
-                datasets: [{
-                    data: brandChartData.data,
-                    backgroundColor: brandChartData.colors,
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 20,
-                            usePointStyle: true,
-                            generateLabels: function(chart) {
-                                const data = chart.data;
-                                if (data.labels.length && data.datasets.length) {
-                                    const dataset = data.datasets[0];
-                                    const total = dataset.data.reduce((a, b) => a + b, 0);
-                                    
-                                    return data.labels.map((label, i) => {
-                                        const value = dataset.data[i];
-                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                        
-                                        return {
-                                            text: `${label}: ${value} (${percentage}%)`,
-                                            fillStyle: dataset.backgroundColor[i],
-                                            strokeStyle: dataset.backgroundColor[i],
-                                            lineWidth: 0,
-                                            pointStyle: 'circle',
-                                            hidden: false,
-                                            index: i
-                                        };
-                                    });
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    size: 12
                                 }
-                                return [];
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const vehicleType = context.dataset.label;
+                                    const value = context.parsed.y;
+                                    return `${vehicleType}: ${value} adet`;
+                                }
                             }
                         }
                     },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.parsed;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                return `${label}: ${value} adet (${percentage}%)`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-
-    // En Çok Alım Yaptığımız Cariler Chart (Bar Chart)
-    const topCustomersCtx = document.getElementById('topCustomersChart');
-    if (topCustomersCtx) {
-        const topCustomersData = JSON.parse('{{ top_customers_data|escapejs }}');
-        
-        // Renkli bar chart için farklı renkler
-        const colors = [
-            'rgba(239, 68, 68, 0.8)',   // Kırmızı
-            'rgba(59, 130, 246, 0.8)',  // Mavi
-            'rgba(245, 158, 11, 0.8)',  // Sarı
-            'rgba(16, 185, 129, 0.8)',  // Yeşil
-            'rgba(139, 92, 246, 0.8)',  // Mor
-            'rgba(236, 72, 153, 0.8)',  // Pembe
-            'rgba(6, 182, 212, 0.8)',   // Cyan
-            'rgba(132, 204, 22, 0.8)'   // Lime
-        ];
-        
-        const topCustomersChart = new Chart(topCustomersCtx, {
-            type: 'bar',
-            data: {
-                labels: topCustomersData.labels,
-                datasets: [{
-                    label: 'Toplam Alım (₺)',
-                    data: topCustomersData.data,
-                    backgroundColor: colors.slice(0, topCustomersData.labels.length),
-                    borderColor: colors.slice(0, topCustomersData.labels.length).map(color => color.replace('0.8', '1')),
-                    borderWidth: 2,
-                    borderRadius: 4,
-                    borderSkipped: false,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 20
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            title: function(context) {
-                                const details = topCustomersData.details[context[0].dataIndex];
-                                return details.name;
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 16,
+                            ticks: {
+                                stepSize: 2,
+                                callback: function (value) {
+                                    return value;
+                                }
                             },
-                            label: function(context) {
-                                const details = topCustomersData.details[context.dataIndex];
-                                return [
-                                    'Toplam Alım: ₺' + context.parsed.y.toLocaleString('tr-TR'),
-                                    'Sipariş Sayısı: ' + details.count + ' adet'
-                                ];
+                            title: {
+                                display: true,
+                                text: 'Satılan Adet',
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)',
+                                drawBorder: false
                             }
                         },
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
-                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                        borderWidth: 1
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0,0,0,0.1)'
-                        },
-                        ticks: {
-                            callback: function(value) {
-                                return '₺' + value.toLocaleString('tr-TR');
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Mevsim',
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: false
                             }
                         }
                     },
-                    x: {
-                        grid: {
-                            display: false
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // Lastik Marka Dağılımı Chart (Doughnut)
+        const orderStatusCtx = document.getElementById('orderStatusChart');
+        if (orderStatusCtx) {
+            const brandChartData = JSON.parse('{{ brand_chart_data|escapejs }}');
+
+            const brandChart = new Chart(orderStatusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: brandChartData.labels,
+                    datasets: [{
+                        data: brandChartData.data,
+                        backgroundColor: brandChartData.colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                generateLabels: function (chart) {
+                                    const data = chart.data;
+                                    if (data.labels.length && data.datasets.length) {
+                                        const dataset = data.datasets[0];
+                                        const total = dataset.data.reduce((a, b) => a + b, 0);
+
+                                        return data.labels.map((label, i) => {
+                                            const value = dataset.data[i];
+                                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+
+                                            return {
+                                                text: `${label}: ${value} (${percentage}%)`,
+                                                fillStyle: dataset.backgroundColor[i],
+                                                strokeStyle: dataset.backgroundColor[i],
+                                                lineWidth: 0,
+                                                pointStyle: 'circle',
+                                                hidden: false,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                    return [];
+                                }
+                            }
                         },
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 0
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return `${label}: ${value} adet (${percentage}%)`;
+                                }
+                            }
                         }
                     }
                 }
-            }
-        });
-    }
+            });
+        }
 
-    // Chart period buttons functionality
-    const periodButtons = document.querySelectorAll('[data-chart-period]');
-    periodButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Remove active class from all buttons
-            periodButtons.forEach(btn => btn.classList.remove('active'));
-            // Add active class to clicked button
-            this.classList.add('active');
-            
-            // Here you would typically update the chart data based on the selected period
-            console.log('Selected period:', this.dataset.chartPeriod);
+
+        // En Çok Alım Yaptığımız Cariler Chart (Bar Chart)
+        const topCustomersCtx = document.getElementById('topCustomersChart');
+        if (topCustomersCtx) {
+            const topCustomersData = JSON.parse('{{ top_customers_data|escapejs }}');
+
+            // Renkli bar chart için farklı renkler
+            const colors = [
+                'rgba(239, 68, 68, 0.8)',   // Kırmızı
+                'rgba(59, 130, 246, 0.8)',  // Mavi
+                'rgba(245, 158, 11, 0.8)',  // Sarı
+                'rgba(16, 185, 129, 0.8)',  // Yeşil
+                'rgba(139, 92, 246, 0.8)',  // Mor
+                'rgba(236, 72, 153, 0.8)',  // Pembe
+                'rgba(6, 182, 212, 0.8)',   // Cyan
+                'rgba(132, 204, 22, 0.8)'   // Lime
+            ];
+
+            const topCustomersChart = new Chart(topCustomersCtx, {
+                type: 'bar',
+                data: {
+                    labels: topCustomersData.labels,
+                    datasets: [{
+                        label: 'Toplam Alım (₺)',
+                        data: topCustomersData.data,
+                        backgroundColor: colors.slice(0, topCustomersData.labels.length),
+                        borderColor: colors.slice(0, topCustomersData.labels.length).map(color => color.replace('0.8', '1')),
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function (context) {
+                                    const details = topCustomersData.details[context[0].dataIndex];
+                                    return details.name;
+                                },
+                                label: function (context) {
+                                    const details = topCustomersData.details[context.dataIndex];
+                                    return [
+                                        'Toplam Alım: ₺' + context.parsed.y.toLocaleString('tr-TR'),
+                                        'Sipariş Sayısı: ' + details.count + ' adet'
+                                    ];
+                                }
+                            },
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            },
+                            ticks: {
+                                callback: function (value) {
+                                    return '₺' + value.toLocaleString('tr-TR');
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Chart period buttons functionality
+        const periodButtons = document.querySelectorAll('[data-chart-period]');
+        periodButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                // Remove active class from all buttons
+                periodButtons.forEach(btn => btn.classList.remove('active'));
+                // Add active class to clicked button
+                this.classList.add('active');
+
+                // Here you would typically update the chart data based on the selected period
+                console.log('Selected period:', this.dataset.chartPeriod);
+            });
         });
     });
-});
 </script>
 {% endblock %}
