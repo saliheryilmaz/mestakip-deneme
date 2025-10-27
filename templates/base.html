@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
+
 <head>
     <!-- Meta Tags -->
     <meta charset="UTF-8">
@@ -8,198 +9,424 @@
     <meta name="keywords" content="bootstrap, admin, dashboard, template, modern, responsive">
     <meta name="author" content="Bootstrap Admin Template">
     <meta name="csrf-token" content="{{ csrf_token }}">
-    
+
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="Mestakip">
     <meta property="og:description" content="Clean and modern admin dashboard template built with Bootstrap 5">
     <meta property="og:type" content="website">
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{% load static %}{% static 'icons/favicon.svg' %}">
     <link rel="icon" type="image/png" href="{% load static %}{% static 'icons/favicon.png' %}">
-    
+
     <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    
+
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Title -->
     <title>{% block title %}Dashboard - Mestakip{% endblock %}</title>
-    
+
     <!-- Theme Color -->
     <meta name="theme-color" content="#6366f1">
-    
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="{% load static %}{% static 'manifest.json' %}">
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css" rel="stylesheet">
-    
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% load static %}{% static 'main-DLfE7m78.css' %}">
-    
+
     {% block extra_css %}{% endblock %}
-    
+
     <!-- Sidebar Toggle Styles -->
     <style>
-    .admin-wrapper {
-        transition: all 0.3s ease;
-    }
-    
-    .admin-sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        background: #1f2937;
-        z-index: 1000;
-        overflow-y: auto;
-        width: 250px;
-        transition: width 0.3s ease;
-    }
-    
-    .admin-sidebar .nav-link span {
-        transition: opacity 0.3s ease;
-    }
-    
-    .admin-sidebar .nav-link .badge {
-        transition: opacity 0.3s ease;
-    }
-    
-    .admin-sidebar .nav-link .ms-auto {
-        transition: opacity 0.3s ease;
-    }
-    
-    .admin-sidebar .text-muted {
-        transition: opacity 0.3s ease;
-    }
-    
-    .admin-main {
-        margin-left: 250px;
-        min-height: 100vh;
-        background: #f8fafc;
-        transition: margin-left 0.3s ease;
-    }
-    
-    .admin-wrapper.sidebar-collapsed .admin-sidebar {
-        width: 60px;
-        overflow: hidden;
-    }
-    
-    .admin-wrapper.sidebar-collapsed .admin-main {
-        margin-left: 60px;
-    }
-    
-    .admin-wrapper.sidebar-collapsed .admin-sidebar .nav-link span {
-        opacity: 0;
-        visibility: hidden;
-    }
-    
-    .admin-wrapper.sidebar-collapsed .admin-sidebar .nav-link .badge {
-        opacity: 0;
-        visibility: hidden;
-    }
-    
-    .admin-wrapper.sidebar-collapsed .admin-sidebar .nav-link .ms-auto {
-        opacity: 0;
-        visibility: hidden;
-    }
-    
-    .admin-wrapper.sidebar-collapsed .admin-sidebar .text-muted {
-        opacity: 0;
-        visibility: hidden;
-    }
-    
-    .admin-wrapper.sidebar-collapsed .admin-sidebar .nav-link {
-        justify-content: center;
-        padding: 0.75rem 0.5rem;
-    }
-    
-    .admin-wrapper.sidebar-collapsed .admin-sidebar .nav-link i {
-        margin-right: 0;
-    }
-    
-    .admin-wrapper.sidebar-collapsed .admin-sidebar .navbar-brand {
-        justify-content: center;
-        padding: 1rem 0.5rem;
-    }
-    
-    .admin-wrapper.sidebar-collapsed .admin-sidebar .navbar-brand h1 {
-        display: none;
-    }
-    
-    .admin-wrapper.sidebar-collapsed .admin-sidebar .navbar-brand img {
-        margin-right: 0;
-    }
-    
-    .admin-wrapper.sidebar-collapsed .admin-sidebar .sidebar-header {
-        justify-content: center;
-        padding: 1rem 0.5rem;
-    }
-    
-    .admin-wrapper.sidebar-collapsed .sidebar-toggle-btn {
-        display: none !important;
-    }
-    
-    .admin-sidebar .sidebar-header .sidebar-toggle-btn,
-    .sidebar-toggle-btn {
-        display: flex !important;
-        background: #6366f1 !important;
-        border: 2px solid #4f46e5 !important;
-        color: white !important;
-        padding: 0.75rem !important;
-        border-radius: 8px !important;
-        transition: all 0.3s ease !important;
-        min-width: 50px !important;
-        height: 50px !important;
-        align-items: center !important;
-        justify-content: center !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
-        cursor: pointer !important;
-        font-size: 1rem !important;
-        position: relative !important;
-        z-index: 1000 !important;
-        margin: 0 !important;
-        font-family: inherit !important;
-        line-height: 1.5 !important;
-        text-align: center !important;
-        text-decoration: none !important;
-        vertical-align: middle !important;
-        user-select: none !important;
-    }
-    
-    .admin-sidebar .sidebar-header .sidebar-toggle-btn:hover,
-    .sidebar-toggle-btn:hover {
-        background: #4f46e5 !important;
-        border-color: #3730a3 !important;
-        color: white !important;
-        transform: scale(1.05) !important;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.3) !important;
-    }
-    
-    .admin-sidebar .sidebar-header .sidebar-toggle-btn i,
-    .sidebar-toggle-btn i {
-        font-size: 1.2rem !important;
-        font-weight: bold !important;
-        color: white !important;
-    }
-    
-    @media (max-width: 768px) {
+        .admin-wrapper {
+            transition: all 0.3s ease;
+        }
+
         .admin-sidebar {
-            transform: translateX(-100%);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            background: #1f2937;
+            z-index: 1000;
+            overflow-y: auto;
+            width: 250px;
+            transition: width 0.3s ease;
         }
-        
+
+        .admin-sidebar .nav-link span {
+            transition: opacity 0.3s ease;
+        }
+
+        .admin-sidebar .nav-link .badge {
+            transition: opacity 0.3s ease;
+        }
+
+        .admin-sidebar .nav-link .ms-auto {
+            transition: opacity 0.3s ease;
+        }
+
+        .admin-sidebar .text-muted {
+            transition: opacity 0.3s ease;
+        }
+
         .admin-main {
-            margin-left: 0;
+            margin-left: 250px;
+            min-height: 100vh;
+            background: #f8fafc;
+            transition: margin-left 0.3s ease;
         }
-        
+
         .admin-wrapper.sidebar-collapsed .admin-sidebar {
-            transform: translateX(-100%);
+            width: 60px;
+            overflow: hidden;
         }
-    }
+
+        .admin-wrapper.sidebar-collapsed .admin-main {
+            margin-left: 60px;
+        }
+
+        .admin-wrapper.sidebar-collapsed .admin-sidebar .nav-link span {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .admin-wrapper.sidebar-collapsed .admin-sidebar .nav-link .badge {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .admin-wrapper.sidebar-collapsed .admin-sidebar .nav-link .ms-auto {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .admin-wrapper.sidebar-collapsed .admin-sidebar .text-muted {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .admin-wrapper.sidebar-collapsed .admin-sidebar .nav-link {
+            justify-content: center;
+            padding: 0.75rem 0.5rem;
+        }
+
+        .admin-wrapper.sidebar-collapsed .admin-sidebar .nav-link i {
+            margin-right: 0;
+        }
+
+        .admin-wrapper.sidebar-collapsed .admin-sidebar .navbar-brand {
+            justify-content: center;
+            padding: 1rem 0.5rem;
+        }
+
+        .admin-wrapper.sidebar-collapsed .admin-sidebar .navbar-brand h1 {
+            display: none;
+        }
+
+        .admin-wrapper.sidebar-collapsed .admin-sidebar .navbar-brand img {
+            margin-right: 0;
+        }
+
+        .admin-wrapper.sidebar-collapsed .admin-sidebar .sidebar-header {
+            justify-content: center;
+            padding: 1rem 0.5rem;
+        }
+
+        .admin-wrapper.sidebar-collapsed .sidebar-toggle-btn {
+            display: none !important;
+        }
+
+        .admin-sidebar .sidebar-header .sidebar-toggle-btn,
+        .sidebar-toggle-btn {
+            display: flex !important;
+            background: #6366f1 !important;
+            border: 2px solid #4f46e5 !important;
+            color: white !important;
+            padding: 0.75rem !important;
+            border-radius: 8px !important;
+            transition: all 0.3s ease !important;
+            min-width: 50px !important;
+            height: 50px !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+            cursor: pointer !important;
+            font-size: 1rem !important;
+            position: relative !important;
+            z-index: 1000 !important;
+            margin: 0 !important;
+            font-family: inherit !important;
+            line-height: 1.5 !important;
+            text-align: center !important;
+            text-decoration: none !important;
+            vertical-align: middle !important;
+            user-select: none !important;
+        }
+
+        .admin-sidebar .sidebar-header .sidebar-toggle-btn:hover,
+        .sidebar-toggle-btn:hover {
+            background: #4f46e5 !important;
+            border-color: #3730a3 !important;
+            color: white !important;
+            transform: scale(1.05) !important;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .admin-sidebar .sidebar-header .sidebar-toggle-btn i,
+        .sidebar-toggle-btn i {
+            font-size: 1.2rem !important;
+            font-weight: bold !important;
+            color: white !important;
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+
+            /* Sidebar Mobile Ayarları */
+            .admin-sidebar {
+                transform: translateX(-100%);
+                z-index: 1050;
+                position: fixed;
+                width: 280px;
+            }
+
+            .admin-main {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .admin-wrapper.sidebar-collapsed .admin-sidebar {
+                transform: translateX(-100%);
+            }
+
+            /* Navbar Mobile Ayarları */
+            .navbar .container-fluid {
+                padding: 0.5rem 1rem;
+            }
+
+            .navbar-brand h1 {
+                font-size: 1.2rem;
+            }
+
+            .search-container {
+                display: none;
+                /* Mobilde arama çubuğunu gizle */
+            }
+
+            .navbar-nav.flex-row {
+                gap: 0.5rem;
+            }
+
+            .navbar-nav .btn {
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+
+            /* Dashboard Mobile Ayarları */
+            .d-flex.justify-content-between.align-items-center {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .d-flex.gap-2 {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+            }
+
+            .d-flex.gap-2 .btn {
+                flex: 1;
+                min-width: 120px;
+                font-size: 0.85rem;
+                padding: 0.5rem 0.75rem;
+            }
+
+            /* Stats Cards Mobile */
+            .stats-card .card-body {
+                padding: 1rem;
+            }
+
+            .stats-icon {
+                width: 40px;
+                height: 40px;
+            }
+
+            .stats-card h3 {
+                font-size: 1.5rem;
+            }
+
+            /* Table Mobile Ayarları */
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+
+            .table th,
+            .table td {
+                padding: 0.5rem 0.25rem;
+                white-space: nowrap;
+            }
+
+            /* Card Mobile Ayarları */
+            .card {
+                margin-bottom: 1rem;
+            }
+
+            .card-header {
+                padding: 0.75rem 1rem;
+            }
+
+            .card-body {
+                padding: 1rem;
+            }
+
+            /* Form Mobile Ayarları */
+            .form-control,
+            .form-select {
+                font-size: 16px;
+                /* iOS zoom önleme */
+            }
+
+            /* Modal Mobile Ayarları */
+            .modal-dialog {
+                margin: 0.5rem;
+                max-width: calc(100% - 1rem);
+            }
+
+            .modal-body {
+                padding: 1rem;
+            }
+
+            /* Bildirim Dropdown Mobile */
+            .dropdown-menu {
+                width: 300px !important;
+                max-width: calc(100vw - 2rem);
+                left: auto !important;
+                right: 0 !important;
+            }
+
+            .notification-item {
+                padding: 0.75rem;
+            }
+
+            .notification-title {
+                font-size: 0.9rem;
+            }
+
+            .notification-message {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Tablet Responsive Styles */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .admin-sidebar {
+                width: 220px;
+            }
+
+            .admin-main {
+                margin-left: 220px;
+            }
+
+            .admin-wrapper.sidebar-collapsed .admin-main {
+                margin-left: 60px;
+            }
+
+            .search-container {
+                max-width: 300px;
+            }
+
+            .d-flex.gap-2 .btn {
+                font-size: 0.9rem;
+                padding: 0.6rem 1rem;
+            }
+        }
+
+        /* Extra Small Mobile (iPhone SE, etc.) */
+        @media (max-width: 480px) {
+            .admin-main {
+                padding: 0.5rem;
+            }
+
+            .navbar-brand h1 {
+                font-size: 1rem;
+            }
+
+            .d-flex.gap-2 .btn {
+                font-size: 0.8rem;
+                padding: 0.4rem 0.6rem;
+                min-width: 100px;
+            }
+
+            .stats-card h3 {
+                font-size: 1.3rem;
+            }
+
+            .card-header h5 {
+                font-size: 1rem;
+            }
+
+            .table-responsive {
+                font-size: 0.8rem;
+            }
+
+            .dropdown-menu {
+                width: 280px !important;
+            }
+        }
+
+        /* Landscape Mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .admin-main {
+                padding: 0.5rem;
+            }
+
+            .stats-card .card-body {
+                padding: 0.75rem;
+            }
+
+            .d-flex.justify-content-between.align-items-center {
+                flex-direction: row;
+                align-items: center;
+            }
+
+            .d-flex.gap-2 {
+                width: auto;
+            }
+        }
+
+        /* Touch Device Optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            .btn {
+                min-height: 44px;
+                /* Apple touch target minimum */
+            }
+
+            .nav-link {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+            }
+
+            .dropdown-item {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+            }
+
+            .notification-item {
+                min-height: 60px;
+            }
+        }
     </style>
 </head>
 
@@ -215,25 +442,29 @@
 
     <!-- Main Wrapper -->
     <div class="admin-wrapper" id="admin-wrapper">
-        
+
         <!-- Header -->
         <header class="admin-header">
             <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
                 <div class="container-fluid">
+                    <!-- Mobile Sidebar Toggle (sadece mobilde görünür) -->
+                    <button class="btn btn-outline-primary d-lg-none me-2" type="button" onclick="toggleMobileSidebar()"
+                        aria-label="Toggle sidebar">
+                        <i class="bi bi-list"></i>
+                    </button>
+
                     <!-- Logo/Brand - Now first on the left -->
                     <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard:index' %}">
-                        <img src="{% load static %}{% static 'images/logo.svg' %}" alt="Logo" height="32" class="d-inline-block align-text-top me-2">
+                        <img src="{% load static %}{% static 'images/logo.svg' %}" alt="Logo" height="32"
+                            class="d-inline-block align-text-top me-2">
                         <h1 class="h4 mb-0 fw-bold text-primary">MesTakip</h1>
                     </a>
 
                     <!-- Search Bar -->
                     <div class="search-container flex-grow-1 mx-4">
                         <div class="position-relative">
-                            <input type="search" 
-                                   class="form-control" 
-                                   placeholder="Search... (Ctrl+K)"
-                                   data-search-input
-                                   aria-label="Search">
+                            <input type="search" class="form-control" placeholder="Search... (Ctrl+K)" data-search-input
+                                aria-label="Search">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
                         </div>
                     </div>
@@ -241,48 +472,40 @@
                     <!-- Right Side Icons -->
                     <div class="navbar-nav flex-row">
                         <!-- Theme Toggle -->
-                        <button class="btn btn-outline-secondary me-2" 
-                                type="button" 
-                                data-theme-toggle
-                                data-bs-toggle="tooltip"
-                                data-bs-placement="bottom"
-                                title="Toggle theme">
+                        <button class="btn btn-outline-secondary me-2" type="button" data-theme-toggle
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" title="Toggle theme">
                             <i class="bi bi-sun-fill"></i>
                         </button>
 
                         <!-- Fullscreen Toggle -->
-                        <button class="btn btn-outline-secondary me-2" 
-                                type="button" 
-                                data-fullscreen-toggle
-                                data-bs-toggle="tooltip"
-                                data-bs-placement="bottom"
-                                title="Toggle fullscreen">
+                        <button class="btn btn-outline-secondary me-2" type="button" data-fullscreen-toggle
+                            data-bs-toggle="tooltip" data-bs-placement="bottom" title="Toggle fullscreen">
                             <i class="bi bi-arrows-fullscreen icon-hover"></i>
                         </button>
 
                         <!-- Notifications -->
                         <div class="dropdown me-2" id="notificationDropdown">
-                            <button class="btn btn-outline-secondary position-relative" 
-                                    type="button" 
-                                    data-bs-toggle="dropdown" 
-                                    aria-expanded="false"
-                                    id="notificationButton">
+                            <button class="btn btn-outline-secondary position-relative" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false" id="notificationButton">
                                 <i class="bi bi-bell"></i>
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
-                                      id="notificationBadge" style="display: none;">
+                                <span
+                                    class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                    id="notificationBadge" style="display: none;">
                                     0
                                 </span>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end" style="width: 350px; max-height: 400px; overflow-y: auto;">
+                            <ul class="dropdown-menu dropdown-menu-end"
+                                style="width: 350px; max-height: 400px; overflow-y: auto;">
                                 <li class="dropdown-header d-flex justify-content-between align-items-center">
                                     <span>Bildirimler</span>
-                                    <button class="btn btn-sm btn-link text-primary p-0" 
-                                            id="markAllReadBtn" 
-                                            style="font-size: 0.75rem;">
+                                    <button class="btn btn-sm btn-link text-primary p-0" id="markAllReadBtn"
+                                        style="font-size: 0.75rem;">
                                         Tümünü Okundu İşaretle
                                     </button>
                                 </li>
-                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
                                 <div id="notificationList">
                                     <li class="dropdown-item text-center text-muted py-3">
                                         <i class="bi bi-bell-slash fs-4 d-block mb-2"></i>
@@ -295,48 +518,50 @@
                         <!-- User Menu -->
                         {% if user.is_authenticated %}
                         <div class="dropdown">
-                            <button class="btn btn-outline-secondary d-flex align-items-center" 
-                                    type="button" 
-                                    data-bs-toggle="dropdown" 
-                                    aria-expanded="false">
-                                <img src="{% load static %}{% static 'images/avatar-placeholder.svg' %}" 
-                                     alt="User Avatar" 
-                                     width="24" 
-                                     height="24" 
-                                     class="rounded-circle me-2">
+                            <button class="btn btn-outline-secondary d-flex align-items-center" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <img src="{% load static %}{% static 'images/avatar-placeholder.svg' %}"
+                                    alt="User Avatar" width="24" height="24" class="rounded-circle me-2">
                                 <span class="d-none d-md-inline">
                                     {% if user.first_name and user.last_name %}
-                                        {{ user.first_name }} {{ user.last_name }}
+                                    {{ user.first_name }} {{ user.last_name }}
                                     {% elif user.first_name %}
-                                        {{ user.first_name }}
+                                    {{ user.first_name }}
                                     {% else %}
-                                        {{ user.username }}
+                                    {{ user.username }}
                                     {% endif %}
                                 </span>
                                 <i class="bi bi-chevron-down ms-1"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><h6 class="dropdown-header">
-                                    {% if user.first_name and user.last_name %}
+                                <li>
+                                    <h6 class="dropdown-header">
+                                        {% if user.first_name and user.last_name %}
                                         {{ user.first_name }} {{ user.last_name }}
-                                    {% elif user.first_name %}
+                                        {% elif user.first_name %}
                                         {{ user.first_name }}
-                                    {% else %}
-                                        {{ user.username }}
-                                    {% endif %}
-                                    <br><small class="text-muted">
-                                        {% if user.userprofile.role == 'admin' %}
-                                            <span class="badge bg-danger">Admin</span>
                                         {% else %}
-                                            <span class="badge bg-info">Yönetici</span>
+                                        {{ user.username }}
                                         {% endif %}
-                                    </small>
-                                </h6></li>
-                                <li><hr class="dropdown-divider"></li>
+                                        <br><small class="text-muted">
+                                            {% if user.userprofile.role == 'admin' %}
+                                            <span class="badge bg-danger">Admin</span>
+                                            {% else %}
+                                            <span class="badge bg-info">Yönetici</span>
+                                            {% endif %}
+                                        </small>
+                                    </h6>
+                                </li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
                                 <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profil</a></li>
                                 <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Ayarlar</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'dashboard:logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Çıkış Yap</a></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li><a class="dropdown-item" href="{% url 'dashboard:logout' %}"><i
+                                            class="bi bi-box-arrow-right me-2"></i>Çıkış Yap</a></li>
                             </ul>
                         </div>
                         {% else %}
@@ -358,22 +583,21 @@
                 <!-- Sidebar Header -->
                 <div class="sidebar-header d-flex align-items-center justify-content-between p-3">
                     <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard:index' %}">
-                        <img src="{% load static %}{% static 'images/logo.svg' %}" alt="Logo" height="32" class="d-inline-block align-text-top me-2">
+                        <img src="{% load static %}{% static 'images/logo.svg' %}" alt="Logo" height="32"
+                            class="d-inline-block align-text-top me-2">
                         <h1 class="h4 mb-0 fw-bold text-white">MesTakip</h1>
                     </a>
-                    <button class="sidebar-toggle-btn" 
-                            type="button" 
-                            data-sidebar-toggle
-                            aria-label="Toggle sidebar"
-                            title="Toggle Sidebar">
+                    <button class="sidebar-toggle-btn" type="button" data-sidebar-toggle aria-label="Toggle sidebar"
+                        title="Toggle Sidebar">
                         <i class="bi bi-list"></i>
                     </button>
                 </div>
-                
+
                 <nav class="sidebar-nav">
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'dashboard:index' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}"
+                                href="{% url 'dashboard:index' %}">
                                 <i class="bi bi-speedometer2"></i>
                                 <span>Dashboard</span>
                             </a>
@@ -406,14 +630,14 @@
                             <a class="nav-link" href="{% url 'dashboard:forms' %}">
                                 <i class="bi bi-ui-checks"></i>
                                 <span>Kontrol Edilen Siparişler</span>
-                                
+
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'dashboard:elements' %}">
                                 <i class="bi bi-box-seam"></i>
                                 <span>Sipariş Envanteri</span>
-                                
+
                             </a>
                         </li>
                         <li class="nav-item">
@@ -426,7 +650,7 @@
                             <a class="nav-link" href="{% url 'dashboard:messages' %}">
                                 <i class="bi bi-chat-dots"></i>
                                 <span>Messages</span>
-                             
+
                             </a>
                         </li>
                         <li class="nav-item">
@@ -486,7 +710,7 @@
                 </div>
             </div>
         </footer>
-        </div> <!-- /.admin-wrapper -->
+    </div> <!-- /.admin-wrapper -->
     </div>
 
     <!-- Toast Container -->
@@ -496,442 +720,444 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <!-- Custom JS -->
     <script src="{% load static %}{% static 'main-f0Mg-34g.js' %}"></script>
-    
+
     <!-- Page specific scripts -->
     {% block extra_js %}
     {% endblock %}
-    
+
     <!-- Sidebar Toggle Script -->
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('Sidebar toggle script loaded');
-        const toggleButton = document.querySelector('[data-sidebar-toggle]');
-        const wrapper = document.getElementById('admin-wrapper');
-        
-        console.log('Toggle button found:', toggleButton);
-        console.log('Wrapper found:', wrapper);
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('Sidebar toggle script loaded');
+            const toggleButton = document.querySelector('[data-sidebar-toggle]');
+            const wrapper = document.getElementById('admin-wrapper');
 
-        if (toggleButton && wrapper) {
-            // Set initial state from localStorage
-            const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-            if (isCollapsed) {
-                wrapper.classList.add('sidebar-collapsed');
-            }
+            console.log('Toggle button found:', toggleButton);
+            console.log('Wrapper found:', wrapper);
 
-            // Attach click listener
-            toggleButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                const isCurrentlyCollapsed = wrapper.classList.contains('sidebar-collapsed');
-                
-                if (isCurrentlyCollapsed) {
-                    // Show sidebar
-                    wrapper.classList.remove('sidebar-collapsed');
-                    localStorage.setItem('sidebar-collapsed', 'false');
-                } else {
-                    // Hide sidebar
+            if (toggleButton && wrapper) {
+                // Set initial state from localStorage
+                const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+                if (isCollapsed) {
                     wrapper.classList.add('sidebar-collapsed');
-                    localStorage.setItem('sidebar-collapsed', 'true');
                 }
-            });
-        }
-    });
+
+                // Attach click listener
+                toggleButton.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const isCurrentlyCollapsed = wrapper.classList.contains('sidebar-collapsed');
+
+                    if (isCurrentlyCollapsed) {
+                        // Show sidebar
+                        wrapper.classList.remove('sidebar-collapsed');
+                        localStorage.setItem('sidebar-collapsed', 'false');
+                    } else {
+                        // Hide sidebar
+                        wrapper.classList.add('sidebar-collapsed');
+                        localStorage.setItem('sidebar-collapsed', 'true');
+                    }
+                });
+            }
+        });
     </script>
-    
+
     <!-- Theme Toggle Script -->
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const themeToggleButton = document.querySelector('[data-theme-toggle]');
-        const htmlElement = document.documentElement;
-        
-        // Set initial theme from localStorage
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        htmlElement.setAttribute('data-bs-theme', savedTheme);
-        
-        // Update button icon based on current theme
-        updateThemeIcon(savedTheme);
-        
-        if (themeToggleButton) {
-            themeToggleButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                const currentTheme = htmlElement.getAttribute('data-bs-theme');
-                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-                
-                // Apply new theme
-                htmlElement.setAttribute('data-bs-theme', newTheme);
-                localStorage.setItem('theme', newTheme);
-                
-                // Update button icon
-                updateThemeIcon(newTheme);
-                
-                console.log('Theme changed to:', newTheme);
-            });
-        }
-        
-        function updateThemeIcon(theme) {
+        document.addEventListener('DOMContentLoaded', function () {
+            const themeToggleButton = document.querySelector('[data-theme-toggle]');
+            const htmlElement = document.documentElement;
+
+            // Set initial theme from localStorage
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            htmlElement.setAttribute('data-bs-theme', savedTheme);
+
+            // Update button icon based on current theme
+            updateThemeIcon(savedTheme);
+
             if (themeToggleButton) {
-                const icon = themeToggleButton.querySelector('i');
-                if (icon) {
-                    if (theme === 'light') {
-                        icon.className = 'bi bi-sun-fill';
-                    } else {
-                        icon.className = 'bi bi-moon-fill';
+                themeToggleButton.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    const currentTheme = htmlElement.getAttribute('data-bs-theme');
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+                    // Apply new theme
+                    htmlElement.setAttribute('data-bs-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+
+                    // Update button icon
+                    updateThemeIcon(newTheme);
+
+                    console.log('Theme changed to:', newTheme);
+                });
+            }
+
+            function updateThemeIcon(theme) {
+                if (themeToggleButton) {
+                    const icon = themeToggleButton.querySelector('i');
+                    if (icon) {
+                        if (theme === 'light') {
+                            icon.className = 'bi bi-sun-fill';
+                        } else {
+                            icon.className = 'bi bi-moon-fill';
+                        }
                     }
                 }
             }
-        }
-    });
+        });
     </script>
 
     <!-- Fullscreen Toggle Script -->
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const fullscreenToggleButton = document.querySelector('[data-fullscreen-toggle]');
-        
-        if (fullscreenToggleButton) {
-            fullscreenToggleButton.addEventListener('click', function() {
-                toggleFullscreen();
-            });
-        }
-        
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                // Tam ekrana geç
-                document.documentElement.requestFullscreen().then(() => {
-                    updateFullscreenIcon(true);
-                }).catch(err => {
-                    console.log('Tam ekran modu desteklenmiyor:', err);
-                });
-            } else {
-                // Tam ekrandan çık
-                document.exitFullscreen().then(() => {
-                    updateFullscreenIcon(false);
-                }).catch(err => {
-                    console.log('Tam ekrandan çıkma hatası:', err);
+        document.addEventListener('DOMContentLoaded', function () {
+            const fullscreenToggleButton = document.querySelector('[data-fullscreen-toggle]');
+
+            if (fullscreenToggleButton) {
+                fullscreenToggleButton.addEventListener('click', function () {
+                    toggleFullscreen();
                 });
             }
-        }
-        
-        function updateFullscreenIcon(isFullscreen) {
-            const icon = fullscreenToggleButton?.querySelector('i');
-            if (icon) {
-                if (isFullscreen) {
-                    icon.className = 'bi bi-fullscreen-exit icon-hover';
-                    fullscreenToggleButton.setAttribute('title', 'Tam Ekrandan Çık');
+
+            function toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    // Tam ekrana geç
+                    document.documentElement.requestFullscreen().then(() => {
+                        updateFullscreenIcon(true);
+                    }).catch(err => {
+                        console.log('Tam ekran modu desteklenmiyor:', err);
+                    });
                 } else {
-                    icon.className = 'bi bi-arrows-fullscreen icon-hover';
-                    fullscreenToggleButton.setAttribute('title', 'Tam Ekran');
+                    // Tam ekrandan çık
+                    document.exitFullscreen().then(() => {
+                        updateFullscreenIcon(false);
+                    }).catch(err => {
+                        console.log('Tam ekrandan çıkma hatası:', err);
+                    });
                 }
             }
-        }
-        
-        // Fullscreen değişikliklerini dinle (ESC tuşu vs.)
-        document.addEventListener('fullscreenchange', function() {
-            updateFullscreenIcon(!!document.fullscreenElement);
+
+            function updateFullscreenIcon(isFullscreen) {
+                const icon = fullscreenToggleButton?.querySelector('i');
+                if (icon) {
+                    if (isFullscreen) {
+                        icon.className = 'bi bi-fullscreen-exit icon-hover';
+                        fullscreenToggleButton.setAttribute('title', 'Tam Ekrandan Çık');
+                    } else {
+                        icon.className = 'bi bi-arrows-fullscreen icon-hover';
+                        fullscreenToggleButton.setAttribute('title', 'Tam Ekran');
+                    }
+                }
+            }
+
+            // Fullscreen değişikliklerini dinle (ESC tuşu vs.)
+            document.addEventListener('fullscreenchange', function () {
+                updateFullscreenIcon(!!document.fullscreenElement);
+            });
         });
-    });
     </script>
-    
+
     <!-- Animation Keyframes -->
     <style>
-    @keyframes slideInLeft {
-        from {
-            transform: translateX(-100%);
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100%);
+            }
+
+            to {
+                transform: translateX(0);
+            }
         }
-        to {
-            transform: translateX(0);
+
+        @keyframes slideOutLeft {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-100%);
+            }
         }
-    }
-    
-    @keyframes slideOutLeft {
-        from {
-            transform: translateX(0);
-        }
-        to {
-            transform: translateX(-100%);
-        }
-    }
     </style>
-    
+
     <!-- Dark Theme Styles -->
     <style>
-    [data-bs-theme="dark"] {
-        --bs-body-bg: #0f172a;
-        --bs-body-color: #ffffff;
-    }
-    
-    [data-bs-theme="dark"] .admin-main {
-        background: #0f172a !important;
-        color: #ffffff !important;
-    }
-    
-    [data-bs-theme="dark"] .card {
-        background-color: #1e293b !important;
-        border-color: #334155 !important;
-        color: #ffffff !important;
-    }
-    
-    [data-bs-theme="dark"] .card-header {
-        background-color: #334155 !important;
-        border-bottom-color: #334155 !important;
-        color: #ffffff !important;
-    }
-    
-    [data-bs-theme="dark"] .table {
-        color: #ffffff !important;
-    }
-    
-    [data-bs-theme="dark"] .table-light {
-        background-color: #334155 !important;
-        color: #ffffff !important;
-    }
-    
-    [data-bs-theme="dark"] .text-muted {
-        color: #94a3b8 !important;
-    }
-    
-    [data-bs-theme="dark"] .navbar {
-        background-color: #1e293b !important;
-        border-bottom-color: #334155 !important;
-    }
-    
-    [data-bs-theme="dark"] .navbar-brand {
-        color: #ffffff !important;
-    }
-    
-    [data-bs-theme="dark"] .form-control {
-        background-color: #334155 !important;
-        border-color: #334155 !important;
-        color: #ffffff !important;
-    }
-    
-    [data-bs-theme="dark"] .form-control:focus {
-        background-color: #334155 !important;
-        border-color: #6366f1 !important;
-        color: #ffffff !important;
-        box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25) !important;
-    }
-    
-    [data-bs-theme="dark"] .btn-outline-secondary {
-        color: #ffffff !important;
-        border-color: #334155 !important;
-    }
-    
-    [data-bs-theme="dark"] .btn-outline-secondary:hover {
-        background-color: #334155 !important;
-        border-color: #334155 !important;
-        color: #ffffff !important;
-    }
-    
-    [data-bs-theme="dark"] .dropdown-menu {
-        background-color: #1e293b !important;
-        border-color: #334155 !important;
-    }
-    
-    [data-bs-theme="dark"] .dropdown-item {
-        color: #ffffff !important;
-    }
-    
-    [data-bs-theme="dark"] .dropdown-item:hover {
-        background-color: #334155 !important;
-        color: #ffffff !important;
-    }
-    
-    [data-bs-theme="dark"] .admin-footer {
-        background-color: #1e293b !important;
-        color: #94a3b8 !important;
-    }
-    
-    /* Dark theme chart colors */
-    [data-bs-theme="dark"] .chart-container {
-        background-color: #1e293b !important;
-    }
-    
-    [data-bs-theme="dark"] canvas {
-        filter: brightness(0.9) contrast(1.1);
-    }
-    
-    /* Bildirim stilleri */
-    .notification-item {
-        padding: 12px 16px;
-        border-bottom: 1px solid #e2e8f0;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-    
-    .notification-item:hover {
-        background-color: #f8fafc;
-    }
-    
-    .notification-item.unread {
-        background-color: #eff6ff;
-        border-left: 3px solid #3b82f6;
-    }
-    
-    .notification-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        color: white;
-        margin-right: 12px;
-    }
-    
-    .notification-content {
-        flex: 1;
-    }
-    
-    .notification-title {
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 4px;
-        color: #1e293b;
-    }
-    
-    .notification-message {
-        font-size: 13px;
-        color: #64748b;
-        margin-bottom: 4px;
-        line-height: 1.4;
-    }
-    
-    .notification-time {
-        font-size: 11px;
-        color: #94a3b8;
-    }
-    
-    .notification-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 8px;
-    }
-    
-    .notification-actions .btn {
-        font-size: 11px;
-        padding: 2px 8px;
-    }
-    
-    [data-bs-theme="dark"] .notification-item {
-        border-bottom-color: #334155;
-    }
-    
-    [data-bs-theme="dark"] .notification-item:hover {
-        background-color: #334155;
-    }
-    
-    [data-bs-theme="dark"] .notification-item.unread {
-        background-color: #1e3a8a;
-        border-left-color: #3b82f6;
-    }
-    
-    [data-bs-theme="dark"] .notification-title {
-        color: #ffffff;
-    }
-    
-    [data-bs-theme="dark"] .notification-message {
-        color: #cbd5e1;
-    }
-    
-    [data-bs-theme="dark"] .notification-time {
-        color: #94a3b8;
-    }
+        [data-bs-theme="dark"] {
+            --bs-body-bg: #0f172a;
+            --bs-body-color: #ffffff;
+        }
+
+        [data-bs-theme="dark"] .admin-main {
+            background: #0f172a !important;
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .card {
+            background-color: #1e293b !important;
+            border-color: #334155 !important;
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .card-header {
+            background-color: #334155 !important;
+            border-bottom-color: #334155 !important;
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .table {
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .table-light {
+            background-color: #334155 !important;
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .text-muted {
+            color: #94a3b8 !important;
+        }
+
+        [data-bs-theme="dark"] .navbar {
+            background-color: #1e293b !important;
+            border-bottom-color: #334155 !important;
+        }
+
+        [data-bs-theme="dark"] .navbar-brand {
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .form-control {
+            background-color: #334155 !important;
+            border-color: #334155 !important;
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .form-control:focus {
+            background-color: #334155 !important;
+            border-color: #6366f1 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25) !important;
+        }
+
+        [data-bs-theme="dark"] .btn-outline-secondary {
+            color: #ffffff !important;
+            border-color: #334155 !important;
+        }
+
+        [data-bs-theme="dark"] .btn-outline-secondary:hover {
+            background-color: #334155 !important;
+            border-color: #334155 !important;
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .dropdown-menu {
+            background-color: #1e293b !important;
+            border-color: #334155 !important;
+        }
+
+        [data-bs-theme="dark"] .dropdown-item {
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .dropdown-item:hover {
+            background-color: #334155 !important;
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .admin-footer {
+            background-color: #1e293b !important;
+            color: #94a3b8 !important;
+        }
+
+        /* Dark theme chart colors */
+        [data-bs-theme="dark"] .chart-container {
+            background-color: #1e293b !important;
+        }
+
+        [data-bs-theme="dark"] canvas {
+            filter: brightness(0.9) contrast(1.1);
+        }
+
+        /* Bildirim stilleri */
+        .notification-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .notification-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .notification-item.unread {
+            background-color: #eff6ff;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .notification-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: white;
+            margin-right: 12px;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #1e293b;
+        }
+
+        .notification-message {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .notification-time {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .notification-actions .btn {
+            font-size: 11px;
+            padding: 2px 8px;
+        }
+
+        [data-bs-theme="dark"] .notification-item {
+            border-bottom-color: #334155;
+        }
+
+        [data-bs-theme="dark"] .notification-item:hover {
+            background-color: #334155;
+        }
+
+        [data-bs-theme="dark"] .notification-item.unread {
+            background-color: #1e3a8a;
+            border-left-color: #3b82f6;
+        }
+
+        [data-bs-theme="dark"] .notification-title {
+            color: #ffffff;
+        }
+
+        [data-bs-theme="dark"] .notification-message {
+            color: #cbd5e1;
+        }
+
+        [data-bs-theme="dark"] .notification-time {
+            color: #94a3b8;
+        }
     </style>
 
     <!-- Bildirim Sistemi JavaScript -->
     <script>
-    class NotificationSystem {
-        constructor() {
-            this.notifications = [];
-            this.unreadCount = 0;
-            this.checkInterval = 30000; // 30 saniye
-            this.init();
-        }
-        
-        init() {
-            this.loadNotifications();
-            this.setupEventListeners();
-            this.startPeriodicCheck();
-        }
-        
-        setupEventListeners() {
-            // Tümünü okundu işaretle butonu
-            const markAllReadBtn = document.getElementById('markAllReadBtn');
-            if (markAllReadBtn) {
-                markAllReadBtn.addEventListener('click', () => {
-                    this.markAllAsRead();
-                });
+        class NotificationSystem {
+            constructor() {
+                this.notifications = [];
+                this.unreadCount = 0;
+                this.checkInterval = 30000; // 30 saniye
+                this.init();
             }
-            
-            // Bildirim dropdown açıldığında
-            const notificationButton = document.getElementById('notificationButton');
-            if (notificationButton) {
-                notificationButton.addEventListener('click', () => {
-                    this.loadNotifications();
-                });
+
+            init() {
+                this.loadNotifications();
+                this.setupEventListeners();
+                this.startPeriodicCheck();
             }
-        }
-        
-        async loadNotifications() {
-            try {
-                const response = await fetch('/dashboard/api/notifications/');
-                const data = await response.json();
-                
-                if (data.success) {
-                    this.notifications = data.notifications;
-                    this.unreadCount = data.unread_count;
-                    this.updateUI();
+
+            setupEventListeners() {
+                // Tümünü okundu işaretle butonu
+                const markAllReadBtn = document.getElementById('markAllReadBtn');
+                if (markAllReadBtn) {
+                    markAllReadBtn.addEventListener('click', () => {
+                        this.markAllAsRead();
+                    });
                 }
-            } catch (error) {
-                console.error('Bildirimler yüklenirken hata:', error);
-            }
-        }
-        
-        updateUI() {
-            this.updateBadge();
-            this.updateNotificationList();
-        }
-        
-        updateBadge() {
-            const badge = document.getElementById('notificationBadge');
-            if (badge) {
-                if (this.unreadCount > 0) {
-                    badge.textContent = this.unreadCount;
-                    badge.style.display = 'block';
-                } else {
-                    badge.style.display = 'none';
+
+                // Bildirim dropdown açıldığında
+                const notificationButton = document.getElementById('notificationButton');
+                if (notificationButton) {
+                    notificationButton.addEventListener('click', () => {
+                        this.loadNotifications();
+                    });
                 }
             }
-        }
-        
-        updateNotificationList() {
-            const listContainer = document.getElementById('notificationList');
-            if (!listContainer) return;
-            
-            if (this.notifications.length === 0) {
-                listContainer.innerHTML = `
+
+            async loadNotifications() {
+                try {
+                    const response = await fetch('/dashboard/api/notifications/');
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.notifications = data.notifications;
+                        this.unreadCount = data.unread_count;
+                        this.updateUI();
+                    }
+                } catch (error) {
+                    console.error('Bildirimler yüklenirken hata:', error);
+                }
+            }
+
+            updateUI() {
+                this.updateBadge();
+                this.updateNotificationList();
+            }
+
+            updateBadge() {
+                const badge = document.getElementById('notificationBadge');
+                if (badge) {
+                    if (this.unreadCount > 0) {
+                        badge.textContent = this.unreadCount;
+                        badge.style.display = 'block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            }
+
+            updateNotificationList() {
+                const listContainer = document.getElementById('notificationList');
+                if (!listContainer) return;
+
+                if (this.notifications.length === 0) {
+                    listContainer.innerHTML = `
                     <li class="dropdown-item text-center text-muted py-3">
                         <i class="bi bi-bell-slash fs-4 d-block mb-2"></i>
                         Henüz bildirim yok
                     </li>
                 `;
-                return;
-            }
-            
-            let html = '';
-            this.notifications.forEach(notification => {
-                const isUnread = notification.status === 'pending' || notification.status === 'sent';
-                const timeAgo = this.getTimeAgo(notification.scheduled_time);
-                
-                html += `
+                    return;
+                }
+
+                let html = '';
+                this.notifications.forEach(notification => {
+                    const isUnread = notification.status === 'pending' || notification.status === 'sent';
+                    const timeAgo = this.getTimeAgo(notification.scheduled_time);
+
+                    html += `
                     <li class="notification-item ${isUnread ? 'unread' : ''}" 
                         data-notification-id="${notification.id}">
                         <div class="d-flex">
@@ -956,161 +1182,223 @@
                         </div>
                     </li>
                 `;
-            });
-            
-            listContainer.innerHTML = html;
-        }
-        
-        async markAsRead(notificationId) {
-            try {
-                const response = await fetch(`/dashboard/api/notifications/${notificationId}/read/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': this.getCSRFToken(),
-                        'Content-Type': 'application/json'
-                    }
                 });
-                
-                const data = await response.json();
-                if (data.success) {
+
+                listContainer.innerHTML = html;
+            }
+
+            async markAsRead(notificationId) {
+                try {
+                    const response = await fetch(`/dashboard/api/notifications/${notificationId}/read/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': this.getCSRFToken(),
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.loadNotifications();
+                        this.showToast('Bildirim okundu olarak işaretlendi', 'success');
+                    }
+                } catch (error) {
+                    console.error('Bildirim işaretlenirken hata:', error);
+                    this.showToast('Bir hata oluştu', 'error');
+                }
+            }
+
+            async markAllAsRead() {
+                try {
+                    const response = await fetch('/dashboard/api/notifications/read-all/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': this.getCSRFToken(),
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.loadNotifications();
+                        this.showToast(data.message, 'success');
+                    }
+                } catch (error) {
+                    console.error('Bildirimler işaretlenirken hata:', error);
+                    this.showToast('Bir hata oluştu', 'error');
+                }
+            }
+
+            async dismiss(notificationId) {
+                try {
+                    const response = await fetch(`/dashboard/api/notifications/${notificationId}/dismiss/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': this.getCSRFToken(),
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.loadNotifications();
+                        this.showToast('Bildirim kapatıldı', 'success');
+                    }
+                } catch (error) {
+                    console.error('Bildirim kapatılırken hata:', error);
+                    this.showToast('Bir hata oluştu', 'error');
+                }
+            }
+
+            startPeriodicCheck() {
+                setInterval(() => {
                     this.loadNotifications();
-                    this.showToast('Bildirim okundu olarak işaretlendi', 'success');
-                }
-            } catch (error) {
-                console.error('Bildirim işaretlenirken hata:', error);
-                this.showToast('Bir hata oluştu', 'error');
+                }, this.checkInterval);
             }
-        }
-        
-        async markAllAsRead() {
-            try {
-                const response = await fetch('/dashboard/api/notifications/read-all/', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': this.getCSRFToken(),
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    this.loadNotifications();
-                    this.showToast(data.message, 'success');
-                }
-            } catch (error) {
-                console.error('Bildirimler işaretlenirken hata:', error);
-                this.showToast('Bir hata oluştu', 'error');
+
+            getTimeAgo(dateString) {
+                const now = new Date();
+                const date = new Date(dateString);
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMins / 60);
+                const diffDays = Math.floor(diffHours / 24);
+
+                if (diffMins < 1) return 'Şimdi';
+                if (diffMins < 60) return `${diffMins} dakika önce`;
+                if (diffHours < 24) return `${diffHours} saat önce`;
+                if (diffDays < 7) return `${diffDays} gün önce`;
+
+                return date.toLocaleDateString('tr-TR');
             }
-        }
-        
-        async dismiss(notificationId) {
-            try {
-                const response = await fetch(`/dashboard/api/notifications/${notificationId}/dismiss/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': this.getCSRFToken(),
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    this.loadNotifications();
-                    this.showToast('Bildirim kapatıldı', 'success');
-                }
-            } catch (error) {
-                console.error('Bildirim kapatılırken hata:', error);
-                this.showToast('Bir hata oluştu', 'error');
-            }
-        }
-        
-        startPeriodicCheck() {
-            setInterval(() => {
-                this.loadNotifications();
-            }, this.checkInterval);
-        }
-        
-        getTimeAgo(dateString) {
-            const now = new Date();
-            const date = new Date(dateString);
-            const diffMs = now - date;
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMins / 60);
-            const diffDays = Math.floor(diffHours / 24);
-            
-            if (diffMins < 1) return 'Şimdi';
-            if (diffMins < 60) return `${diffMins} dakika önce`;
-            if (diffHours < 24) return `${diffHours} saat önce`;
-            if (diffDays < 7) return `${diffDays} gün önce`;
-            
-            return date.toLocaleDateString('tr-TR');
-        }
-        
-        getCSRFToken() {
-            const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
-                         document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            
-            if (!token) {
-                const cookies = document.cookie.split(';');
-                for (let cookie of cookies) {
-                    const [name, value] = cookie.trim().split('=');
-                    if (name === 'csrftoken') {
-                        return value;
+
+            getCSRFToken() {
+                const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                    document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                if (!token) {
+                    const cookies = document.cookie.split(';');
+                    for (let cookie of cookies) {
+                        const [name, value] = cookie.trim().split('=');
+                        if (name === 'csrftoken') {
+                            return value;
+                        }
                     }
                 }
+
+                return token;
             }
-            
-            return token;
-        }
-        
-        showToast(message, type = 'info') {
-            // SweetAlert2 kullanarak toast göster
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: message,
-                    icon: type === 'success' ? 'success' : type === 'error' ? 'error' : 'info',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true
-                });
-            } else {
-                // Fallback olarak alert kullan
-                alert(message);
+
+            showToast(message, type = 'info') {
+                // SweetAlert2 kullanarak toast göster
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: message,
+                        icon: type === 'success' ? 'success' : type === 'error' ? 'error' : 'info',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                } else {
+                    // Fallback olarak alert kullan
+                    alert(message);
+                }
+            }
+
+            // Yeni bildirim geldiğinde çağrılacak
+            addNotification(notification) {
+                this.notifications.unshift(notification);
+                this.unreadCount++;
+                this.updateUI();
+
+                // Tarayıcı bildirimi göster (izin varsa)
+                if (Notification.permission === 'granted') {
+                    new Notification(notification.title, {
+                        body: notification.message,
+                        icon: '/static/images/logo.svg'
+                    });
+                }
+            }
+
+            // Tarayıcı bildirim izni iste
+            requestNotificationPermission() {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
             }
         }
-        
-        // Yeni bildirim geldiğinde çağrılacak
-        addNotification(notification) {
-            this.notifications.unshift(notification);
-            this.unreadCount++;
-            this.updateUI();
-            
-            // Tarayıcı bildirimi göster (izin varsa)
-            if (Notification.permission === 'granted') {
-                new Notification(notification.title, {
-                    body: notification.message,
-                    icon: '/static/images/logo.svg'
-                });
-            }
-        }
-        
-        // Tarayıcı bildirim izni iste
-        requestNotificationPermission() {
-            if ('Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission();
-            }
-        }
-    }
-    
-    // Sayfa yüklendiğinde bildirim sistemini başlat
-    document.addEventListener('DOMContentLoaded', function() {
-        window.notificationSystem = new NotificationSystem();
-        
-        // Tarayıcı bildirim izni iste
-        window.notificationSystem.requestNotificationPermission();
-    });
+
+        // Sayfa yüklendiğinde bildirim sistemini başlat
+        document.addEventListener('DOMContentLoaded', function () {
+            window.notificationSystem = new NotificationSystem();
+
+            // Tarayıcı bildirim izni iste
+            window.notificationSystem.requestNotificationPermission();
+        });
     </script>
 </body>
-</html>
+
+</html> <!- - Mobile Sidebar Toggle Function -->
+    <script>
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('admin-sidebar');
+
+            if (sidebar) {
+                // Sidebar'ı göster/gizle
+                sidebar.classList.toggle('mobile-show');
+
+                // Backdrop ekle/kaldır
+                let backdrop = document.querySelector('.mobile-sidebar-backdrop');
+                if (sidebar.classList.contains('mobile-show')) {
+                    if (!backdrop) {
+                        backdrop = document.createElement('div');
+                        backdrop.className = 'mobile-sidebar-backdrop';
+                        backdrop.onclick = toggleMobileSidebar;
+                        document.body.appendChild(backdrop);
+                    }
+                } else {
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                }
+            }
+        }
+
+        // ESC tuşu ile sidebar'ı kapat
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                const sidebar = document.getElementById('admin-sidebar');
+                if (sidebar && sidebar.classList.contains('mobile-show')) {
+                    toggleMobileSidebar();
+                }
+            }
+        });
+    </script>
+
+    <!-- Mobile Sidebar Backdrop Styles -->
+    <style>
+        .mobile-sidebar-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1040;
+            display: block;
+        }
+
+        @media (min-width: 769px) {
+            .mobile-sidebar-backdrop {
+                display: none !important;
+            }
+        }
+
+        /* Mobile Sidebar Show Animation */
+        .admin-sidebar.mobile-show {
+            transform: translateX(0) !important;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+    </style>
