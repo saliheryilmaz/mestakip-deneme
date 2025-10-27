@@ -153,3 +153,8 @@ yarn-error.log*
 # Build outputs
 dist/
 build/
+dist-modern/
+
+# Railway staticfiles
+staticfiles/
+*.sqlite3
