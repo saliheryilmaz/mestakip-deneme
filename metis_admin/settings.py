@@ -47,7 +47,6 @@ if RAILWAY_PUBLIC_DOMAIN:
         ALLOWED_HOSTS.append(RAILWAY_PUBLIC_DOMAIN.split(':')[0])
 
 # CSRF ayarları - Railway tüm domainleri için izin ver
-import re
 
 # Railway domain'i al
 railway_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')

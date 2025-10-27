@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import json
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from .models import Siparis, UserProfile, Event
+from .models import Siparis, UserProfile, Event, Notification
 from .forms import SiparisForm
 
 @login_required
@@ -1358,7 +1358,6 @@ def logout_view(request):
     return redirect('dashboard:login')
 
 # Bildirim API'leri
-from .models import Notification
 
 @login_required
 def get_notifications(request):

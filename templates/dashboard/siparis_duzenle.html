@@ -216,6 +216,27 @@
                             </div>
                         </div>
                         
+                        <!-- İptal Sebebi Alanı (Durum iptal seçildiğinde görünür) -->
+                        <div id="iptal-sebebi-container" style="display: none;">
+                            <div class="mb-3">
+                                <label for="{{ form.iptal_sebebi.id_for_label }}" class="form-label text-danger">
+                                    İPTAL SEBEBİ <span class="text-danger">*</span>
+                                </label>
+                                {{ form.iptal_sebebi }}
+                                {% if form.iptal_sebebi.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.iptal_sebebi.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Siparişi iptal ettiğinizde mutlaka sebep belirtmeniz gerekmektedir.
+                                </small>
+                            </div>
+                        </div>
+                        
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-success">
                                 <i class="bi bi-check-lg me-1"></i>
@@ -286,6 +307,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const urunInput = document.getElementById('id_urun');
     const oneCikarCheckbox = document.getElementById('id_one_cikar');
     const form = document.getElementById('siparisForm');
+    const durumSelect = document.getElementById('id_durum');
+    const iptalSebebiContainer = document.getElementById('iptal-sebebi-container');
+    const iptalSebebiField = document.getElementById('iptal-sebebi-field');
     
     console.log('Form elemanları:', {
         adetInput, birimFiyatInput, toplamFiyatInput, urunInput, oneCikarCheckbox
@@ -389,10 +413,51 @@ document.addEventListener('DOMContentLoaded', function() {
         urunInput.style.backgroundColor = '';
     }
     
-    // Form gönderiminde hesaplama yap
+    // İptal sebebi alanını göster/gizle
+    function toggleIptalSebebi() {
+        if (durumSelect && iptalSebebiContainer) {
+            const selectedValue = durumSelect.value;
+            if (selectedValue === 'iptal') {
+                iptalSebebiContainer.style.display = 'block';
+                if (iptalSebebiField) {
+                    iptalSebebiField.required = true;
+                }
+            } else {
+                iptalSebebiContainer.style.display = 'none';
+                if (iptalSebebiField) {
+                    iptalSebebiField.required = false;
+                    iptalSebebiField.value = '';
+                }
+            }
+        }
+    }
+    
+    // Durum değiştiğinde iptal sebebi alanını kontrol et
+    if (durumSelect) {
+        durumSelect.addEventListener('change', toggleIptalSebebi);
+        
+        // Sayfa yüklendiğinde kontrol et
+        toggleIptalSebebi();
+    }
+    
+    // Form gönderiminde validasyon yap
     if (form) {
         form.addEventListener('submit', function(e) {
             hesaplaToplamFiyat();
+            
+            // Durum iptal ise ve iptal sebebi boşsa form gönderimini engelle
+            if (durumSelect && durumSelect.value === 'iptal') {
+                if (!iptalSebebiField || !iptalSebebiField.value.trim()) {
+                    e.preventDefault();
+                    alert('İptal edilen siparişler için iptal sebebi belirtmek zorunludur. Lütfen iptal sebebini girin.');
+                    if (iptalSebebiField) {
+                        iptalSebebiField.focus();
+                        iptalSebebiField.style.borderColor = '#dc3545';
+                    }
+                    return false;
+                }
+            }
+            
             console.log('Form gönderiliyor...');
         });
     }

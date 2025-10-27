@@ -35,11 +35,36 @@ def healthcheck(request):
     except Exception as e:
         return HttpResponse(f"ERROR: {str(e)}", status=500, content_type="text/plain")
 
+def debug_info(request):
+    """Debug bilgileri için endpoint"""
+    import sys
+    import django
+    from django.conf import settings
+    
+    info = []
+    info.append(f"Python version: {sys.version}")
+    info.append(f"Django version: {django.get_version()}")
+    info.append(f"DEBUG: {settings.DEBUG}")
+    info.append(f"ALLOWED_HOSTS: {settings.ALLOWED_HOSTS}")
+    info.append(f"DATABASE: {settings.DATABASES['default']['ENGINE']}")
+    
+    # Environment variables
+    import os
+    info.append(f"RAILWAY_ENVIRONMENT: {os.environ.get('RAILWAY_ENVIRONMENT', 'Not set')}")
+    info.append(f"PORT: {os.environ.get('PORT', 'Not set')}")
+    info.append(f"DATABASE_URL: {'Set' if os.environ.get('DATABASE_URL') else 'Not set'}")
+    
+    # Installed apps
+    info.append(f"INSTALLED_APPS: {settings.INSTALLED_APPS}")
+    
+    return HttpResponse("\n".join(info), content_type="text/plain")
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', redirect_to_login, name='home'),
     path('dashboard/', include('dashboard.urls')),
     path('health/', healthcheck, name='healthcheck'),
+    path('debug/', debug_info, name='debug_info'),
 ]
 
 # Serve static files during development

@@ -122,6 +122,17 @@
                                 <label class="form-label fw-bold">Açıklama</label>
                                 <p class="form-control-plaintext">{{ siparis.aciklama|default:"Açıklama yok" }}</p>
                             </div>
+                            {% if siparis.durum == 'iptal' and siparis.iptal_sebebi %}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-danger">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                    İptal Sebebi
+                                </label>
+                                <p class="form-control-plaintext text-danger bg-light p-3 border border-danger rounded">
+                                    {{ siparis.iptal_sebebi }}
+                                </p>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

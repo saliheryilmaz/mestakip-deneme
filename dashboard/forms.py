@@ -9,7 +9,7 @@ class SiparisForm(forms.ModelForm):
         fields = [
             'cari_firma', 'marka', 'urun', 'grup', 'mevsim',
             'adet', 'birim_fiyat', 'toplam_fiyat', 'durum', 'ambar', 
-            'odeme', 'sms_durum', 'aciklama', 'one_cikar'
+            'odeme', 'sms_durum', 'aciklama', 'one_cikar', 'iptal_sebebi'
         ]
         widgets = {
             'cari_firma': forms.TextInput(attrs={
@@ -66,6 +66,12 @@ class SiparisForm(forms.ModelForm):
             }),
             'one_cikar': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
+            }),
+            'iptal_sebebi': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': '3',
+                'placeholder': 'İptal sebebini girin',
+                'id': 'iptal-sebebi-field'
             })
         }
         labels = {
@@ -82,7 +88,8 @@ class SiparisForm(forms.ModelForm):
             'odeme': 'ÖDEME',
             'sms_durum': 'SMS DURUMU',
             'aciklama': 'AÇIKLAMA',
-            'one_cikar': 'ÖNE ÇIKAR'
+            'one_cikar': 'ÖNE ÇIKAR',
+            'iptal_sebebi': 'İPTAL SEBEBİ'
         }
     
     def __init__(self, *args, **kwargs):
@@ -105,3 +112,21 @@ class SiparisForm(forms.ModelForm):
         self.fields['birim_fiyat'].required = True
         self.fields['ambar'].required = True
         self.fields['odeme'].required = True
+        
+        # Durum iptal ise iptal_sebebi zorunlu
+        if self.data.get('durum') == 'iptal':
+            self.fields['iptal_sebebi'].required = True
+            self.fields['iptal_sebebi'].widget.attrs['required'] = True
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        durum = cleaned_data.get('durum')
+        iptal_sebebi = cleaned_data.get('iptal_sebebi')
+        
+        # Durum iptal ise sebep zorunlu
+        if durum == 'iptal' and not iptal_sebebi:
+            raise forms.ValidationError({
+                'iptal_sebebi': 'İptal edilecek siparişler için iptal sebebi belirtmek zorunludur.'
+            })
+        
+        return cleaned_data
