@@ -113,13 +113,13 @@ import dj_database_url
 # Railway PostgreSQL veya SQLite fallback
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
+# Production'da (Railway) PostgreSQL kullan
 if DATABASE_URL:
-    # Railway PostgreSQL kullan
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL)
     }
 else:
-    # Local development için SQLite
+    # Local development veya SQLite fallback
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',

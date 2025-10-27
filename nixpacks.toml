@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ['python311', 'pip']
+nixPkgs = ['python311', 'pip', 'sqlite', 'pkg-config', 'gcc', 'glibc']
 
 [phases.install]
 cmds = [
