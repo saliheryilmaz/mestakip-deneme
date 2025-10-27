@@ -1,5 +1,6 @@
 [phases.setup]
-nixPkgs = ['python311', 'pip', 'sqlite', 'pkg-config', 'gcc', 'glibc']
+nixPkgs = ['python311', 'pip']
+aptPkgs = ['libsqlite3-0', 'libsqlite3-dev', 'sqlite3']
 
 [phases.install]
 cmds = [
