@@ -659,6 +659,267 @@
     }
 }
 
+/* Tablet Responsive */
+@media (max-width: 768px) {
+    /* Calendar Header Mobile */
+    .calendar-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .calendar-nav-left {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .calendar-nav-controls {
+        justify-content: center;
+    }
+    
+    .calendar-title {
+        font-size: 1.2rem;
+        text-align: center;
+    }
+    
+    .calendar-nav-right {
+        justify-content: center;
+    }
+    
+    .view-switcher {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .view-btn {
+        flex: 1;
+        text-align: center;
+    }
+    
+    /* Month View Mobile */
+    .month-grid {
+        grid-template-rows: repeat(6, 100px);
+    }
+    
+    .month-day {
+        padding: 0.5rem;
+    }
+    
+    .day-number {
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .day-event {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    /* Week View Mobile */
+    .week-header {
+        grid-template-columns: 60px repeat(7, 1fr);
+    }
+    
+    .week-row {
+        grid-template-columns: 60px repeat(7, 1fr);
+    }
+    
+    .time-slot {
+        font-size: 0.7rem;
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .week-cell {
+        min-height: 50px;
+        padding: 0.25rem;
+    }
+    
+    .week-event {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.3rem;
+    }
+    
+    /* Day View Mobile */
+    .day-header {
+        padding: 1rem;
+    }
+    
+    .day-title h4 {
+        font-size: 1.2rem;
+    }
+    
+    .day-row {
+        grid-template-columns: 60px 1fr;
+    }
+    
+    .day-cell {
+        min-height: 60px;
+        padding: 0.5rem;
+    }
+    
+    .day-event {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    /* Calendar Sidebar Mobile */
+    .calendar-sidebar.mobile-show {
+        width: 280px;
+    }
+    
+    .mini-calendar {
+        margin-bottom: 1rem;
+    }
+    
+    .mini-calendar-day {
+        font-size: 0.8rem;
+    }
+    
+    .category-item {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .upcoming-item {
+        padding: 0.5rem;
+    }
+    
+    .upcoming-event-title {
+        font-size: 0.8rem;
+    }
+    
+    .upcoming-description {
+        font-size: 0.7rem;
+    }
+}
+
+/* Extra Small Mobile */
+@media (max-width: 480px) {
+    /* Calendar Container */
+    .calendar-container {
+        margin: 0 -0.5rem;
+    }
+    
+    .calendar-main {
+        padding: 0.5rem;
+    }
+    
+    /* Calendar Header */
+    .calendar-title {
+        font-size: 1rem;
+    }
+    
+    .view-btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+    
+    /* Month View Extra Small */
+    .month-grid {
+        grid-template-rows: repeat(6, 80px);
+    }
+    
+    .month-header-day {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.75rem;
+    }
+    
+    .month-day {
+        padding: 0.25rem;
+    }
+    
+    .day-number {
+        font-size: 0.75rem;
+    }
+    
+    .day-event {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.3rem;
+    }
+    
+    /* Week View Extra Small */
+    .week-header {
+        grid-template-columns: 50px repeat(7, 1fr);
+    }
+    
+    .week-row {
+        grid-template-columns: 50px repeat(7, 1fr);
+    }
+    
+    .time-slot {
+        font-size: 0.65rem;
+        padding: 0.4rem 0.2rem;
+    }
+    
+    .week-header-day {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .day-name {
+        font-size: 0.7rem;
+    }
+    
+    .day-number {
+        font-size: 1rem;
+    }
+    
+    /* Floating Button Mobile */
+    .add-event-btn {
+        bottom: 1rem;
+        right: 1rem;
+        width: 48px;
+        height: 48px;
+    }
+    
+    /* Modal Mobile */
+    .modal-dialog.modal-lg {
+        max-width: calc(100% - 1rem);
+        margin: 0.5rem;
+    }
+    
+    .modal-header {
+        padding: 1rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-footer {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+    }
+}
+
+/* Landscape Mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .calendar-header {
+        flex-direction: row;
+        align-items: center;
+    }
+    
+    .calendar-nav-left {
+        flex-direction: row;
+        align-items: center;
+    }
+    
+    .month-grid {
+        grid-template-rows: repeat(6, 70px);
+    }
+    
+    .week-cell {
+        min-height: 40px;
+    }
+    
+    .day-cell {
+        min-height: 50px;
+    }
+}
+
 /* Floating Add Event Button */
 .add-event-btn {
     position: fixed;
