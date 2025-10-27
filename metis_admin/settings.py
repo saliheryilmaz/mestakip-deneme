@@ -119,13 +119,21 @@ if DATABASE_URL:
         'default': dj_database_url.parse(DATABASE_URL)
     }
 else:
-    # Local development veya SQLite fallback
+    # Local development için SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
+# Railway deployment için PostgreSQL ayarları
+if 'RAILWAY_ENVIRONMENT' in os.environ:
+    # Railway'de PostgreSQL zorunlu
+    if not DATABASE_URL:
+        # Eğer DATABASE_URL yoksa, PostgreSQL database eklenmesi gerekiyor
+        print("WARNING: PostgreSQL database required for Railway deployment")
+        print("Please add a PostgreSQL database in Railway dashboard")
 
 
 # Password validation
