@@ -37,7 +37,6 @@ ALLOWED_HOSTS = [
     '.up.railway.app',
     'mestakip2.up.railway.app',
     '0.0.0.0',
-    '*',  # Geçici olarak tüm hostlara izin ver
 ]
 
 # Railway domain varsa ekle
@@ -46,6 +45,27 @@ if RAILWAY_PUBLIC_DOMAIN:
     # Eğer tam domain verilmişse, sadece domain kısmını al
     if not RAILWAY_PUBLIC_DOMAIN.startswith('.'):
         ALLOWED_HOSTS.append(RAILWAY_PUBLIC_DOMAIN.split(':')[0])
+
+# CSRF ayarları - Railway tüm domainleri için izin ver
+import re
+
+# Railway domain'i al
+railway_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')
+port = os.environ.get('PORT', '')
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.railway.app',
+    'https://*.up.railway.app',
+]
+
+# Eğer Railway domain varsa ekle
+if railway_domain:
+    # Domain'i temizle
+    domain_clean = railway_domain.split(':')[0].split('@')[0]
+    if not domain_clean.startswith('http'):
+        CSRF_TRUSTED_ORIGINS.append(f'https://{domain_clean}')
+    else:
+        CSRF_TRUSTED_ORIGINS.append(domain_clean)
 
 # Production için güvenlik ayarları
 if not DEBUG:
