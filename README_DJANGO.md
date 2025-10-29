@@ -52,7 +52,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-Tarayıcınızda `http://127.0.0.1:8000` adresine giderek uygulamayı görüntüleyebilirsiniz.
+Tarayıcınızda `http://127.0.0.1:8080` adresine giderek uygulamayı görüntüleyebilirsiniz.
 
 ## Proje Yapısı
 

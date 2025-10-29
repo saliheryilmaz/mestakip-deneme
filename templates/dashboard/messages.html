@@ -1,26 +1,79 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Messages - Mestakip{% endblock %}
-{% block page_name %}messages{% endblock %}
+{% block title %}Gelir/Gider Toplamları - Mestakip{% endblock %}
+{% block page_name %}gelir-gider-toplamlari{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h3 mb-0">Messages</h1>
-        <p class="text-muted mb-0">Manage your messages and communications.</p>
+        <h1 class="h3 mb-0">Gelir/Gider Toplamları</h1>
+        <p class="text-muted mb-0">Kasa bazında net bakiye ve genel toplam.</p>
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Messages Management</h5>
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card text-white" style="background:#4e79a7;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fs-3 fw-bold">{{ servis_toplam|floatformat:0 }}</div>
+                    <div class="text-white-50">SERVİS</div>
+                </div>
+                <i class="bi bi-tools fs-1 opacity-50"></i>
             </div>
-            <div class="card-body">
-                <p class="text-muted">Messages management content will be implemented here.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white" style="background:#4e79a7;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fs-3 fw-bold">{{ merkez_satis_toplam|floatformat:0 }}</div>
+                    <div class="text-white-50">MERKEZ SATIŞ</div>
+                </div>
+                <i class="bi bi-shop fs-1 opacity-50"></i>
             </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white" style="background:#1aa785;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fs-3 fw-bold">{{ genel_toplam|floatformat:0 }}</div>
+                    <div class="text-white-50">Genel Toplam</div>
+                </div>
+                <i class="bi bi-cash-coin fs-1 opacity-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Gelir/Gider Listesi</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:60%">KASA ADI</th>
+                        <th class="text-end">BAKİYE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in kasa_satirlari %}
+                    <tr {% if forloop.counter0|divisibleby:2 %}class="table-light"{% endif %}>
+                        <td class="text-uppercase">{{ r.kasa_adi }}</td>
+                        <td class="text-end">{{ r.bakiye|floatformat:0 }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="table-light">
+                        <td class="fw-bold">GENEL TOPLAM</td>
+                        <td class="text-end fw-bold">{{ genel_toplam|floatformat:0 }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

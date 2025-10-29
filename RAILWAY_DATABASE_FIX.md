@@ -93,3 +93,9 @@ python manage.py migrate
 
 Değişiklikleri push edip Railway'de PostgreSQL database ekledikten sonra, uygulamanız sorunsuz çalışacak!
 
+
+
+
+
+
+

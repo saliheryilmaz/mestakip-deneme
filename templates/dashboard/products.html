@@ -5,27 +5,146 @@
 {% block page_name %}products{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="h3 mb-0">Products</h1>
-        <p class="text-muted mb-0">Manage your product catalog.</p>
-    </div>
-    <div class="d-flex gap-2">
-        <button type="button" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-2"></i>
-            Add Product
-        </button>
-    </div>
-</div>
+
 
 <div class="row g-4">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Products Management</h5>
+        <a href="{% url 'dashboard:finance' %}" class="text-decoration-none">
+            <div class="card border-primary">
+                <div class="card-body d-flex align-items-center">
+                    <i class="bi bi-cash-coin text-primary fs-2 me-3"></i>
+                    <div>
+                        <h5 class="card-title mb-1">Gelir/Gider İşlemleri</h5>
+                        <small class="text-muted">Formu açmak için tıklayın. Kaydettikten sonra işlemler burada listelenir.</small>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <p class="text-muted">Products management content will be implemented here.</p>
+        </a>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Günlük Finans Raporu</h5>
+                <form class="d-flex gap-2" method="get">
+                    <input type="date" class="form-control form-control-sm" name="baslangic" value="{{ filters.baslangic }}">
+                    <input type="date" class="form-control form-control-sm" name="bitis" value="{{ filters.bitis }}">
+                    <button class="btn btn-sm btn-outline-primary" type="submit">Filtrele</button>
+                </form>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tarih</th>
+                                <th class="text-success">Gelir</th>
+                                <th class="text-danger">Gider</th>
+                                <th>Net</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for g in gunluk_rapor %}
+                            <tr>
+                                <td>{{ g.tarih|date:'d.m.Y' }}</td>
+                                <td class="text-success">{{ g.gelir }}</td>
+                                <td class="text-danger">{{ g.gider }}</td>
+                                <td><strong>{{ g.net }}</strong></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Kayıt bulunamadı</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th>Toplam</th>
+                                <th class="text-success">{{ genel_toplam.gelir }}</th>
+                                <th class="text-danger">{{ genel_toplam.gider }}</th>
+                                <th>{{ genel_toplam.net }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+</div>
+
+<div class="row g-4 mt-1">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Son İşlemler</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Tip</th>
+                                <th>Kasa</th>
+                                <th>Nakit</th>
+                                <th>Kredi Kartı</th>
+                                <th>Cari</th>
+                                <th>Mehmet Havale</th>
+                                <th>Toplam</th>
+                                <th>Kategori</th>
+                                <th>Açıklama</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tx in transactions %}
+                            <tr>
+                                <td>{{ tx.tarih|date:'d.m.Y' }}</td>
+                                <td><span class="badge {% if tx.hareket_tipi == 'gelir' %}bg-success{% else %}bg-danger{% endif %}">{{ tx.get_hareket_tipi_display }}</span></td>
+                                <td>{{ tx.kasa_adi }}</td>
+                                <td>
+                                    {% if tx.nakit > 0 %}
+                                        ₺{{ tx.nakit|floatformat:2 }}
+                                    {% else %}
+                                        0.00
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if tx.kredi_karti > 0 %}
+                                        ₺{{ tx.kredi_karti|floatformat:2 }}
+                                    {% else %}
+                                        0.00
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if tx.cari > 0 %}
+                                        ₺{{ tx.cari|floatformat:2 }}
+                                    {% else %}
+                                        0.00
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if tx.mehmet_havale > 0 %}
+                                        ₺{{ tx.mehmet_havale|floatformat:2 }}
+                                    {% else %}
+                                        0.00
+                                    {% endif %}
+                                </td>
+                                <td><strong>₺{{ tx.toplam|floatformat:2 }}</strong></td>
+                                <td>
+                                    {{ tx.kategori1 }}{% if tx.kategori2 %} / {{ tx.kategori2 }}{% endif %}{% if tx.kategori3 %} / {{ tx.kategori3 }}{% endif %}
+                                </td>
+                                <td>{{ tx.aciklama }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="10" class="text-center text-muted">Henüz işlem yok</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

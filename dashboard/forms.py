@@ -1,4 +1,60 @@
 from django import forms
+from .models import Transaction, TransactionCategory
+
+
+class TransactionForm(forms.ModelForm):
+    class Meta:
+        model = Transaction
+        fields = [
+            'hareket_tipi', 'tarih', 'kasa_adi', 'nakit', 'kredi_karti', 'cari', 'mehmet_havale',
+            'aciklama', 'kategori1'
+        ]
+        widgets = {
+            'tarih': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'hareket_tipi': forms.Select(attrs={'class': 'form-select'}),
+            'kasa_adi': forms.Select(attrs={'class': 'form-select'}),
+            'nakit': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'value': '0'}),
+            'kredi_karti': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'value': '0'}),
+            'cari': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'value': '0'}),
+            'mehmet_havale': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'value': '0'}),
+            'aciklama': forms.TextInput(attrs={'class': 'form-control'}),
+            'kategori1': forms.Select(attrs={'class': 'form-select'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Kategori1'i opsiyonel yap
+        self.fields['kategori1'].required = False
+        # Açıklama alanını opsiyonel yap
+        self.fields['aciklama'].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        nakit = cleaned.get('nakit') or 0
+        kredi = cleaned.get('kredi_karti') or 0
+        cari = cleaned.get('cari') or 0
+        mehmet = cleaned.get('mehmet_havale') or 0
+        
+        # En az bir ödeme alanı dolu olmalı
+        if nakit + kredi + cari + mehmet <= 0:
+            raise forms.ValidationError('En az bir ödeme alanı (Nakit, Kredi Kartı, Cari veya Mehmet Havale) doldurulmalıdır.')
+        
+        # Sadece bir ödeme türü seçilmeli
+        filled_fields = []
+        if nakit > 0:
+            filled_fields.append('Nakit')
+        if kredi > 0:
+            filled_fields.append('Kredi Kartı')
+        if cari > 0:
+            filled_fields.append('Cari')
+        if mehmet > 0:
+            filled_fields.append('Mehmet Havale')
+            
+        if len(filled_fields) > 1:
+            raise forms.ValidationError(f'Sadece bir ödeme türü seçilmelidir. Şu anda seçili: {", ".join(filled_fields)}')
+        
+        return cleaned
+from django import forms
 from .models import Siparis
 
 class SiparisForm(forms.ModelForm):
