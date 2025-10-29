@@ -5,14 +5,15 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, F, Case, When, DecimalField
 from django.utils import timezone
 from datetime import datetime, timedelta
 import json
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from .models import Siparis, UserProfile, Event, Notification
-from .forms import SiparisForm
+from .models import Siparis, UserProfile, Notification, Transaction, TransactionCategory
+# Event geçici olarak devre dışı
+from .forms import SiparisForm, TransactionForm
 
 @login_required
 def index(request):
@@ -56,6 +57,7 @@ def index(request):
         brand_labels.append(brand['marka'])
         brand_data.append(brand['total_adet'])
     
+    # Real brand chart data from user's orders
     brand_chart_data = {
         'labels': brand_labels,
         'data': brand_data,
@@ -65,28 +67,42 @@ def index(request):
     # Son eklenen işlemler (kullanıcının siparişlerinden son 5 kayıt)
     son_islemler = Siparis.objects.filter(user=request.user).order_by('-olusturma_tarihi')[:5]
     
+    # Son finance işlemleri (kullanıcının işlemlerinden son 5 kayıt)
+    son_finance_islemleri = Transaction.objects.filter(created_by=request.user).order_by('-created_at')[:5]
+    
     # Gerçek istatistikler - sadece kullanıcının siparişleri
     toplam_siparis = Siparis.objects.filter(user=request.user).count()
     toplam_ciro = Siparis.objects.filter(user=request.user).aggregate(total=Sum('toplam_fiyat'))['total'] or 0
     kontrol_edilen_siparis = kontrol_siparisler.count()
     toplam_adet = Siparis.objects.filter(user=request.user).aggregate(total=Sum('adet'))['total'] or 0
     
-    # Aylık ciro verileri (son 12 ay) - sadece kullanıcının siparişleri
+    # Aylık gelir/gider verileri (son 12 ay) - Transaction üzerinden (kullanıcıya göre)
     from datetime import datetime, timedelta
-    monthly_revenue = []
+    monthly_income = []
+    monthly_expense = []
     monthly_labels = []
+    toplam_ifade = (F('nakit') + F('kredi_karti') + F('cari') + F('mehmet_havale'))
     
     for i in range(11, -1, -1):
         start_date = timezone.now() - timedelta(days=30*i)
         end_date = start_date + timedelta(days=30)
         
-        monthly_total = Siparis.objects.filter(
-            user=request.user,
-            olusturma_tarihi__gte=start_date,
-            olusturma_tarihi__lt=end_date
-        ).aggregate(total=Sum('toplam_fiyat'))['total'] or 0
+        gelir_toplam = Transaction.objects.filter(
+            created_by=request.user,
+            tarih__gte=start_date.date(),
+            tarih__lt=end_date.date(),
+            hareket_tipi='gelir'
+        ).aggregate(total=Sum(toplam_ifade))['total'] or 0
         
-        monthly_revenue.append(float(monthly_total))
+        gider_toplam = Transaction.objects.filter(
+            created_by=request.user,
+            tarih__gte=start_date.date(),
+            tarih__lt=end_date.date(),
+            hareket_tipi='gider'
+        ).aggregate(total=Sum(toplam_ifade))['total'] or 0
+        
+        monthly_income.append(float(gelir_toplam))
+        monthly_expense.append(float(gider_toplam))
         monthly_labels.append(start_date.strftime('%b'))
     
     # En çok alım yaptığımız cariler (fiyat bazında) - Yeni Sipariş Ekle'den oluşturulan veriler
@@ -132,7 +148,9 @@ def index(request):
         'tire_sales_data': json.dumps(tire_sales_data),
         'brand_chart_data': json.dumps(brand_chart_data),
         'son_islemler': son_islemler,
-        'monthly_revenue': json.dumps(monthly_revenue),
+        'son_finance_islemleri': son_finance_islemleri,
+        'monthly_income': json.dumps(monthly_income),
+        'monthly_expense': json.dumps(monthly_expense),
         'monthly_labels': json.dumps(monthly_labels),
         'top_customers_data': json.dumps({
             'labels': customer_labels,
@@ -205,12 +223,84 @@ def users(request):
     }
     return render(request, 'dashboard/users.html', context)
 
+@login_required
 def products(request):
-    """Products sayfası"""
+    """Products sayfası: günlük rapor (gelir/gider/net) ve finans sayfasına geçiş"""
+    start = request.GET.get('baslangic')
+    end = request.GET.get('bitis')
+
+    qs = Transaction.objects.filter(created_by=request.user)
+    if start:
+        qs = qs.filter(tarih__gte=start)
+    if end:
+        qs = qs.filter(tarih__lte=end)
+
+    toplam_ifade = (F('nakit') + F('kredi_karti') + F('cari') + F('mehmet_havale'))
+
+    gunluk_rapor = (
+        qs.values('tarih')
+        .annotate(
+            gelir=Sum(Case(When(hareket_tipi='gelir', then=toplam_ifade), default=0, output_field=DecimalField(max_digits=12, decimal_places=2))),
+            gider=Sum(Case(When(hareket_tipi='gider', then=toplam_ifade), default=0, output_field=DecimalField(max_digits=12, decimal_places=2)))
+        )
+        .annotate(net=F('gelir') - F('gider'))
+        .order_by('-tarih')
+    )
+
+    genel_toplam = {
+        'gelir': gunluk_rapor.aggregate(s=Sum('gelir'))['s'] or 0,
+        'gider': gunluk_rapor.aggregate(s=Sum('gider'))['s'] or 0,
+    }
+    genel_toplam['net'] = (genel_toplam['gelir'] - genel_toplam['gider']) if genel_toplam else 0
+
+    last_transactions = Transaction.objects.filter(created_by=request.user).order_by('-tarih', '-id')[:10]
+
     context = {
         'page_title': 'Products',
+        'gunluk_rapor': gunluk_rapor,
+        'genel_toplam': genel_toplam,
+        'transactions': last_transactions,
+        'filters': {
+            'baslangic': start or '',
+            'bitis': end or '',
+        }
     }
     return render(request, 'dashboard/products.html', context)
+
+@login_required
+def finance(request):
+    """Gelir/Gider İşlemleri form sayfası"""
+    form = TransactionForm(request.POST or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            tx = form.save(commit=False)
+            tx.created_by = request.user
+            tx.save()
+            messages.success(request, 'İşlem kaydedildi.')
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if next_url and next_url.startswith('/'):
+                return redirect(next_url)
+            return redirect('dashboard:products')
+        else:
+            # Form geçersizse hataları göster
+            messages.error(request, 'Form hatası! Lütfen aşağıdaki hataları kontrol edin.')
+            print("Form Errors:", form.errors)  # Debug için
+
+    ana_kategoriler = TransactionCategory.objects.filter(parent=None).order_by('name')
+    last_transactions = Transaction.objects.filter(created_by=request.user).order_by('-tarih', '-id')[:10]
+    
+    # Debug için
+    print(f"Ana Kategoriler Sayısı: {ana_kategoriler.count()}")
+    for kat in ana_kategoriler:
+        print(f"  - {kat.name} (ID: {kat.id})")
+
+    context = {
+        'page_title': 'Gelir/Gider İşlemleri',
+        'form': form,
+        'ana_kategoriler': ana_kategoriler,
+        'transactions': last_transactions,
+    }
+    return render(request, 'dashboard/finance.html', context)
 
 @login_required
 def orders(request):
@@ -744,16 +834,96 @@ def reports(request):
     return render(request, 'dashboard/reports.html', context)
 
 def messages_view(request):
-    """Messages sayfası"""
+    """Gelir/Gider Toplamları sayfası (kasa bazında ve genel toplam)."""
+    qs = Transaction.objects.filter(created_by=request.user)
+
+    toplam_ifade = (F('nakit') + F('kredi_karti') + F('cari') + F('mehmet_havale'))
+
+    # Kasa bazında gelir, gider ve net (gelir - gider)
+    kasa_ozet = (
+        qs.values('kasa_adi')
+        .annotate(
+            gelir=Sum(Case(When(hareket_tipi='gelir', then=toplam_ifade), default=0, output_field=DecimalField(max_digits=14, decimal_places=2))),
+            gider=Sum(Case(When(hareket_tipi='gider', then=toplam_ifade), default=0, output_field=DecimalField(max_digits=14, decimal_places=2)))
+        )
+        .annotate(net=F('gelir') - F('gider'))
+        .order_by('kasa_adi')
+    )
+
+    # Kartlar için belirli kasalar
+    servis_toplam = 0
+    merkez_satis_toplam = 0
+    genel_toplam = 0
+    rows = []
+    for row in kasa_ozet:
+        kasa = row['kasa_adi']
+        net = float(row['net'] or 0)
+        rows.append({'kasa_adi': kasa, 'bakiye': net})
+        genel_toplam += net
+        if kasa == 'servis':
+            servis_toplam = net
+        if kasa == 'merkez-satis':
+            merkez_satis_toplam = net
+
     context = {
-        'page_title': 'Messages',
+        'page_title': 'Gelir/Gider Toplamları',
+        'servis_toplam': servis_toplam,
+        'merkez_satis_toplam': merkez_satis_toplam,
+        'genel_toplam': genel_toplam,
+        'kasa_satirlari': rows,
     }
     return render(request, 'dashboard/messages.html', context)
+
+@login_required
+def finance_overview(request):
+    """JSON: Son 12 ay için aylık gelir/gider toplamları (canlı)."""
+    try:
+        labels = []
+        income = []
+        expense = []
+        toplam_ifade = (F('nakit') + F('kredi_karti') + F('cari') + F('mehmet_havale'))
+
+        now = timezone.now()
+        for i in range(11, -1, -1):
+            start_date = (now - timedelta(days=30*i)).date().replace(day=1)
+            # Bir sonraki ayın 1'i
+            if start_date.month == 12:
+                next_month = start_date.replace(year=start_date.year + 1, month=1, day=1)
+            else:
+                next_month = start_date.replace(month=start_date.month + 1, day=1)
+
+            gelir = Transaction.objects.filter(
+                created_by=request.user,
+                tarih__gte=start_date,
+                tarih__lt=next_month,
+                hareket_tipi='gelir'
+            ).aggregate(total=Sum(toplam_ifade))['total'] or 0
+
+            gider = Transaction.objects.filter(
+                created_by=request.user,
+                tarih__gte=start_date,
+                tarih__lt=next_month,
+                hareket_tipi='gider'
+            ).aggregate(total=Sum(toplam_ifade))['total'] or 0
+
+            labels.append(start_date.strftime('%b'))
+            income.append(float(gelir))
+            expense.append(float(gider))
+
+        return JsonResponse({
+            'success': True,
+            'labels': labels,
+            'income': income,
+            'expense': expense,
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 def calendar(request):
     """Calendar sayfası"""
     context = {
         'page_title': 'Takvim',
+        'events': [],
     }
     return render(request, 'dashboard/calendar.html', context)
 
@@ -778,35 +948,16 @@ def create_event(request):
             date_obj = datetime.strptime(data['date'], '%Y-%m-%d').date()
             time_obj = datetime.strptime(data['time'], '%H:%M').time()
             
-            # Etkinlik oluştur
-            event = Event.objects.create(
-                title=data['title'],
-                description=data.get('description', ''),
-                type=data.get('type', 'event'),
-                priority=data.get('priority', 'medium'),
-                date=date_obj,
-                time=time_obj,
-                duration=int(data.get('duration', 60)),
-                location=data.get('location', ''),
-                attendees=data.get('attendees', ''),
-                recurring=data.get('recurring', False),
-                recurrence=data.get('recurrence', 'none'),
-                reminders=json.dumps(data.get('reminders', [])),
-                created_by=request.user
-            )
-            
+            # Geçici olarak basit response döndür
             return JsonResponse({
                 'success': True,
                 'message': 'Etkinlik başarıyla oluşturuldu!',
                 'event': {
-                    'id': event.id,
-                    'title': event.title,
-                    'type': event.type,
-                    'date': event.date.strftime('%Y-%m-%d'),
-                    'time': event.time.strftime('%H:%M'),
-                    'description': event.description,
-                    'location': event.location,
-                    'duration': event.get_duration_display()
+                    'title': data.get('title', ''),
+                    'date': data.get('date', ''),
+                    'time': data.get('time', ''),
+                    'description': data.get('description', ''),
+                    'location': data.get('location', '')
                 }
             })
             
@@ -826,59 +977,114 @@ def create_event(request):
         'error': 'Sadece POST istekleri kabul edilir'
     }, status=405)
 
-@login_required
-def get_events(request):
-    """Etkinlikleri getiren API endpoint'i"""
-    try:
-        # Tarih filtreleri
-        start_date = request.GET.get('start')
-        end_date = request.GET.get('end')
-        
-        events = Event.objects.filter(created_by=request.user)
-        
-        if start_date:
-            events = events.filter(date__gte=start_date)
-        if end_date:
-            events = events.filter(date__lte=end_date)
-        
-        events_data = []
-        for event in events:
-            events_data.append({
-                'id': event.id,
-                'title': event.title,
-                'type': event.type,
-                'date': event.date.strftime('%Y-%m-%d'),
-                'time': event.time.strftime('%H:%M'),
-                'timeStr': event.time.strftime('%H:%M'),
-                'dateStr': event.date.strftime('%d %b'),
-                'description': event.description,
-                'location': event.location,
-                'priority': event.priority,
-                'duration': event.duration,
-                'attendees': event.attendees,
-                'recurring': event.recurring,
-                'recurrence': event.recurrence,
-                'dateObj': event.date.isoformat(),
-                'read': True
-            })
-        
-        return JsonResponse({
-            'success': True,
-            'events': events_data
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        }, status=500)
+# Event geçici olarak devre dışı
+# @login_required
+# def get_events(request):
+#     """Etkinlikleri getiren API endpoint'i"""
+#     try:
+#         # Tarih filtreleri
+#         start_date = request.GET.get('start')
+#         end_date = request.GET.get('end')
+#         
+#         events = Event.objects.filter(created_by=request.user)
+#         
+#         if start_date:
+#             events = events.filter(date__gte=start_date)
+#         if end_date:
+#             events = events.filter(date__lte=end_date)
+#         
+#         events_data = []
+#         for event in events:
+#             events_data.append({
+#                 'id': event.id,
+#                 'title': event.title,
+#                 'type': event.type,
+#                 'date': event.date.strftime('%Y-%m-%d'),
+#                 'time': event.time.strftime('%H:%M'),
+#                 'timeStr': event.time.strftime('%H:%M'),
+#                 'dateStr': event.date.strftime('%d %b'),
+#                 'description': event.description,
+#                 'location': event.location,
+#                 'priority': event.priority,
+#                 'duration': event.duration,
+#                 'attendees': event.attendees,
+#                 'recurring': event.recurring,
+#                 'recurrence': event.recurrence,
+#                 'dateObj': event.date.isoformat(),
+#                 'read': True
+#             })
+#         
+#         return JsonResponse({
+#             'success': True,
+#             'events': events_data
+#         })
+#
+#     except Exception as e:
+#         return JsonResponse({
+#             'success': False,
+#             'error': str(e)
+#         }, status=500)
 
-def files(request):
-    """Files sayfası"""
+@login_required
+def kategoriler(request):
+    """Kategoriler sayfası - Kategori yönetimi"""
+    if request.method == 'POST':
+        # Yeni kategori ekleme
+        kategori_adi = request.POST.get('kategori_adi')
+        parent_id = request.POST.get('parent_id')
+        
+        if kategori_adi:
+            parent = None
+            if parent_id:
+                try:
+                    parent = TransactionCategory.objects.get(id=parent_id)
+                except TransactionCategory.DoesNotExist:
+                    pass
+            
+            TransactionCategory.objects.create(
+                name=kategori_adi,
+                parent=parent,
+                created_by=request.user
+            )
+            if parent:
+                messages.success(request, f'Alt kategori "{kategori_adi}" başarıyla "{parent.name}" kategorisinin altına eklendi!')
+            else:
+                messages.success(request, f'Ana kategori "{kategori_adi}" başarıyla eklendi!')
+        else:
+            messages.error(request, 'Kategori adı boş olamaz!')
+        
+        return redirect('dashboard:kategoriler')
+    
+    # Kategorileri hiyerarşik olarak getir
+    ana_kategoriler = TransactionCategory.objects.filter(parent=None).order_by('name')
+    alt_kategoriler = TransactionCategory.objects.filter(parent__isnull=False).order_by('name')
+    
+    # Hiyerarşik sıralama: Ana kategori -> Alt kategorileri -> Sonraki ana kategori
+    tum_kategoriler = []
+    for ana_kategori in ana_kategoriler:
+        # Ana kategoriyi ekle
+        tum_kategoriler.append(ana_kategori)
+        # Bu ana kategorinin alt kategorilerini ekle
+        alt_kategoriler_bu_ana = TransactionCategory.objects.filter(parent=ana_kategori).order_by('name')
+        tum_kategoriler.extend(alt_kategoriler_bu_ana)
+    
+    # Tüm kullanıcıları getir (dropdown için)
+    tum_kullanicilar = User.objects.all().order_by('username')
+    
     context = {
-        'page_title': 'Files',
+        'page_title': 'Kategoriler',
+        'ana_kategoriler': ana_kategoriler,
+        'tum_kategoriler': tum_kategoriler,
+        'alt_kategoriler': alt_kategoriler,
+        'tum_kullanicilar': tum_kullanicilar,
+        'stats': {
+            'toplam': len(tum_kategoriler),
+            'ana': ana_kategoriler.count(),
+            'alt': alt_kategoriler.count(),
+            'aktif': len(tum_kategoriler),
+        }
     }
-    return render(request, 'dashboard/files.html', context)
+    return render(request, 'dashboard/kategoriler.html', context)
 
 def settings(request):
     """Settings sayfası"""
@@ -1379,7 +1585,7 @@ def get_notifications(request):
                 'scheduled_time': notification.scheduled_time.isoformat(),
                 'sent_time': notification.sent_time.isoformat() if notification.sent_time else None,
                 'read_time': notification.read_time.isoformat() if notification.read_time else None,
-                'event_id': notification.event.id if notification.event else None,
+                'event_id': None,  # Event geçici olarak devre dışı
                 'is_overdue': notification.is_overdue(),
                 'extra_data': notification.get_extra_data_dict()
             })
@@ -1462,134 +1668,219 @@ def dismiss_notification(request, notification_id):
             'error': str(e)
         }, status=500)
 
-def create_event_notifications(event):
-    """Etkinlik için bildirimler oluştur"""
-    from datetime import datetime, timedelta
-    
-    try:
-        # Hatırlatıcı zamanlarını parse et
-        reminders = json.loads(event.reminders) if event.reminders else ['15']
-        
-        # Etkinlik tarih ve saatini birleştir
-        event_datetime = timezone.make_aware(
-            datetime.combine(event.date, event.time)
-        )
-        
-        # Her hatırlatıcı için bildirim oluştur
-        for reminder_minutes in reminders:
-            try:
-                minutes = int(reminder_minutes)
-                reminder_time = event_datetime - timedelta(minutes=minutes)
-                
-                # Geçmiş tarih kontrolü
-                if reminder_time > timezone.now():
-                    # Hatırlatıcı bildirimi oluştur
-                    Notification.objects.create(
-                        title=f"Etkinlik Hatırlatıcısı: {event.title}",
-                        message=f"{event.title} etkinliği {minutes} dakika sonra başlayacak. Konum: {event.location or 'Belirtilmemiş'}",
-                        type='event_reminder',
-                        event=event,
-                        user=event.created_by,
-                        scheduled_time=reminder_time,
-                        extra_data=json.dumps({
-                            'event_id': event.id,
-                            'reminder_minutes': minutes,
-                            'event_type': event.type,
-                            'event_priority': event.priority
-                        })
-                    )
-            except (ValueError, TypeError):
-                continue
-        
-        # Etkinlik başlangıç bildirimi
-        if event_datetime > timezone.now():
-            Notification.objects.create(
-                title=f"Etkinlik Başlıyor: {event.title}",
-                message=f"{event.title} etkinliği şimdi başlıyor! Süre: {event.get_duration_display()}",
-                type='event_start',
-                event=event,
-                user=event.created_by,
-                scheduled_time=event_datetime,
-                extra_data=json.dumps({
-                    'event_id': event.id,
-                    'event_type': event.type,
-                    'event_priority': event.priority,
-                    'duration': event.duration
-                })
-            )
-            
-    except Exception as e:
-        print(f"Bildirim oluşturma hatası: {e}")
+# Event geçici olarak devre dışı
+# def create_event_notifications(event):
+#     """Etkinlik için bildirimler oluştur"""
+#     from datetime import datetime, timedelta
+#     import pytz
+#     
+#     try:
+#         # Hatırlatıcı zamanlarını parse et
+#         reminders = json.loads(event.reminders) if event.reminders else ['15']
+#         
+#         # Etkinlik tarih ve saatini birleştir
+#         naive_datetime = datetime.combine(event.date, event.time)
+#         
+#         # Timezone aware yap - UTC olarak
+#         if timezone.is_naive(naive_datetime):
+#             # Önce local timezone'da oluştur, sonra UTC'ye çevir
+#             local_tz = pytz.timezone('Europe/Istanbul')  # veya settings.TIME_ZONE
+#             local_datetime = local_tz.localize(naive_datetime)
+#             event_datetime = local_datetime.astimezone(pytz.UTC)
+#         else:
+#             event_datetime = naive_datetime
+#         
+#         now_utc = timezone.now()
+#         
+#         # Her hatırlatıcı için bildirim oluştur
+#         for reminder_minutes in reminders:
+#             try:
+#                 minutes = int(reminder_minutes)
+#                 reminder_time = event_datetime - timedelta(minutes=minutes)
+#                 
+#                 # Geçmiş tarih kontrolü - her iki zaman da UTC'de
+#                 if reminder_time > now_utc:
+#                     # Hatırlatıcı bildirimi oluştur
+#                     Notification.objects.create(
+#                         title=f"Etkinlik Hatırlatıcısı: {event.title}",
+#                         message=f"{event.title} etkinliği {minutes} dakika sonra başlayacak. Konum: {event.location or 'Belirtilmemiş'}",
+#                         type='event_reminder',
+#                         event=event,
+#                         user=event.created_by,
+#                         scheduled_time=reminder_time,
+#                         extra_data=json.dumps({
+#                             'event_id': event.id,
+#                             'reminder_minutes': minutes,
+#                             'event_type': event.type,
+#                             'event_priority': event.priority
+#                         })
+#                     )
+#             except (ValueError, TypeError):
+#                 continue
+#         
+#         # Etkinlik başlangıç bildirimi
+#         if event_datetime > now_utc:
+#             Notification.objects.create(
+#                 title=f"Etkinlik Başlıyor: {event.title}",
+#                 message=f"{event.title} etkinliği şimdi başlıyor! Süre: {event.get_duration_display()}",
+#                 type='event_start',
+#                 event=event,
+#                 user=event.created_by,
+#                 scheduled_time=event_datetime,
+#                 extra_data=json.dumps({
+#                     'event_id': event.id,
+#                     'event_type': event.type,
+#                     'event_priority': event.priority,
+#                     'duration': event.duration
+#                 })
+#             )
+#             
+#     except Exception as e:
+#         # Sessizce hata logla (production'da logging kullanılabilir)
+#         pass
 
-# Etkinlik oluşturma view'ını güncelle
+# Etkinlik oluşturma view'ını güncelle (devre dışı sürüm kullanılmıyor)
+# Aşağıdaki sürüm kaldırıldı; aktif olan basit `create_event` yukarıda tanımlıdır.
+
 @login_required
-def create_event(request):
-    """Etkinlik oluşturma API endpoint'i"""
+def finance(request):
+    """Gelir/Gider İşlemleri sayfası"""
     if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
+        form = TransactionForm(request.POST)
+        if form.is_valid():
+            transaction = form.save(commit=False)
+            transaction.created_by = request.user
+            transaction.save()
             
-            # Gerekli alanları kontrol et
-            required_fields = ['title', 'date', 'time']
-            for field in required_fields:
-                if not data.get(field):
-                    return JsonResponse({
-                        'success': False,
-                        'error': f'{field} alanı gereklidir'
-                    }, status=400)
+            messages.success(request, 'İşlem başarıyla kaydedildi!')
             
-            # Tarih ve saat verilerini parse et
-            from datetime import datetime
-            date_obj = datetime.strptime(data['date'], '%Y-%m-%d').date()
-            time_obj = datetime.strptime(data['time'], '%H:%M').time()
-            
-            # Etkinlik oluştur
-            event = Event.objects.create(
-                title=data['title'],
-                description=data.get('description', ''),
-                type=data.get('type', 'event'),
-                priority=data.get('priority', 'medium'),
-                date=date_obj,
-                time=time_obj,
-                duration=int(data.get('duration', 60)),
-                location=data.get('location', ''),
-                attendees=data.get('attendees', ''),
-                recurring=data.get('recurring', False),
-                recurrence=data.get('recurrence', 'none'),
-                reminders=json.dumps(data.get('reminders', ['15'])),
-                created_by=request.user
-            )
-            
-            # Bildirimler oluştur
-            create_event_notifications(event)
-            
-            return JsonResponse({
-                'success': True,
-                'message': 'Etkinlik ve hatırlatıcılar başarıyla oluşturuldu!',
-                'event': {
-                    'id': event.id,
-                    'title': event.title,
-                    'type': event.type,
-                    'date': event.date.strftime('%Y-%m-%d'),
-                    'time': event.time.strftime('%H:%M'),
-                    'description': event.description,
-                    'location': event.location,
-                    'duration': event.get_duration_display()
-                }
-            })
-            
-        except json.JSONDecodeError:
-            return JsonResponse({
-                'success': False,
-                'error': 'Geçersiz JSON verisi'
-            }, status=400)
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'error': str(e)
-            }, status=500)
+            # next parametresi varsa oraya yönlendir
+            next_url = request.POST.get('next')
+            if next_url:
+                return redirect(next_url)
+            else:
+                return redirect('dashboard:finance')
+        else:
+            messages.error(request, 'Form hatası! Lütfen alanları kontrol edin.')
+    else:
+        form = TransactionForm()
     
-    return JsonResponse({
-        'success': False,
-        'error': 'Sadece POST istekleri kabul edilir'
-    }, status=405)
+    context = {
+        'page_title': 'Gelir/Gider İşlemleri',
+        'form': form,
+    }
+    return render(request, 'dashboard/finance.html', context)
+
+@login_required
+def kategori_sil(request, kategori_id):
+    """Kategori silme"""
+    try:
+        kategori = get_object_or_404(TransactionCategory, id=kategori_id)
+        kategori_adi = kategori.name
+        kategori.delete()
+        messages.success(request, f'Kategori "{kategori_adi}" başarıyla silindi!')
+    except Exception as e:
+        messages.error(request, f'Kategori silinirken hata oluştu: {str(e)}')
+    
+    return redirect('dashboard:kategoriler')
+
+@login_required
+def kategori_duzenle(request, kategori_id):
+    """Kategori düzenleme"""
+    kategori = get_object_or_404(TransactionCategory, id=kategori_id)
+    
+    if request.method == 'POST':
+        kategori_adi = request.POST.get('kategori_adi')
+        parent_id = request.POST.get('parent_id')
+        kaydi_acan_id = request.POST.get('kaydi_acan_id')
+        
+        if kategori_adi:
+            # Üst kategori kontrolü
+            parent = None
+            if parent_id:
+                try:
+                    parent = TransactionCategory.objects.get(id=parent_id)
+                    # Kendi kendisinin alt kategorisi olamaz
+                    if parent.id == kategori.id:
+                        messages.error(request, 'Kategori kendi kendisinin alt kategorisi olamaz!')
+                        return redirect('dashboard:kategoriler')
+                except TransactionCategory.DoesNotExist:
+                    pass
+            
+            # Kaydı açan kullanıcıyı güncelle
+            if kaydi_acan_id:
+                try:
+                    user = User.objects.get(id=kaydi_acan_id)
+                    kategori.created_by = user
+                except User.DoesNotExist:
+                    messages.warning(request, 'Seçilen kullanıcı bulunamadı. Kaydı açan değiştirilmedi.')
+            
+            # Kategoriyi güncelle
+            eski_ad = kategori.name
+            kategori.name = kategori_adi
+            kategori.parent = parent
+            kategori.save()
+            
+            messages.success(request, f'Kategori "{eski_ad}" → "{kategori_adi}" olarak güncellendi!')
+        else:
+            messages.error(request, 'Kategori adı boş olamaz!')
+    
+    return redirect('dashboard:kategoriler')
+
+@login_required
+def get_alt_kategoriler(request, ana_kategori_id):
+    """Ana kategoriye ait alt kategorileri JSON olarak döndür"""
+    try:
+        ana_kategori = get_object_or_404(TransactionCategory, id=ana_kategori_id, parent=None)
+        alt_kategoriler = ana_kategori.children.all().order_by('name')
+        
+        data = []
+        for alt_kategori in alt_kategoriler:
+            data.append({
+                'id': alt_kategori.id,
+                'name': alt_kategori.name
+            })
+        
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+@login_required
+def brand_distribution_api(request):
+    """Lastik marka dağılımı API endpoint'i - Canlı veri"""
+    try:
+        # Kullanıcının siparişlerinden marka dağılımını hesapla
+        brand_distribution = Siparis.objects.filter(
+            user=request.user
+        ).values('marka').annotate(
+            total_adet=Sum('adet')
+        ).order_by('-total_adet')
+        
+        # Veri hazırla
+        brands = []
+        colors = [
+            '#3b82f6', '#ef4444', '#10b981', '#f59e0b', 
+            '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16',
+            '#f97316', '#06b6d4', '#8b5cf6', '#ef4444'
+        ]
+        
+        for i, brand in enumerate(brand_distribution):
+            if brand['marka'] and brand['total_adet']:  # Boş marka adlarını filtrele
+                brands.append({
+                    'name': brand['marka'],
+                    'count': brand['total_adet'],
+                    'color': colors[i % len(colors)]
+                })
+        
+        return JsonResponse({
+            'success': True,
+            'brands': brands,
+            'total_brands': len(brands),
+            'total_count': sum(brand['count'] for brand in brands)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

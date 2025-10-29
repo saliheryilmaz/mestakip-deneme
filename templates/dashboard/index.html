@@ -122,7 +122,7 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Gelire Genel Bakış</h5>
+                <h5 class="card-title mb-0">Gelire Genel Bakış (Aylık Gelir/Gider)</h5>
                 <div class="btn-group btn-group-sm" role="group">
                     <button type="button" class="btn btn-outline-primary active" data-chart-period="7d">7D</button>
                     <button type="button" class="btn btn-outline-primary" data-chart-period="30d">30D</button>
@@ -135,7 +135,6 @@
             </div>
         </div>
     </div>
-
 </div>
 
 <!-- Additional Charts Row -->
@@ -157,82 +156,17 @@
                 <h5 class="card-title mb-0">Lastik Marka Dağılımı (Toplam Adet)</h5>
             </div>
             <div class="card-body">
-                <canvas id="orderStatusChart" height="200"></canvas>
+                <canvas id="brandDistributionChart" height="200"></canvas>
             </div>
         </div>
     </div>
 </div>
 
-<!-- New Widgets Row -->
-<div class="row g-4 mb-4">
-    <!-- Son Eklenen İşlemler -->
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Son Eklenen İşlemler</h5>
-                <div class="d-flex gap-2">
-                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'dashboard:elements' %}">Tümünü Gör</a>
-                    <a class="btn btn-sm btn-success" href="{% url 'dashboard:yeni_lastik' %}">Yeni Ekle</a>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Cari</th>
-                                <th>Ürün</th>
-                                <th>Marka</th>
-                                <th>Grup</th>
-                                <th>Mevsim</th>
-                                <th class="text-end">Adet</th>
-                                <th class="text-end">Birim Fiyat</th>
-                                <th class="text-end">Toplam</th>
-                                <th>Durum</th>
-                                <th>Ambar</th>
-                                <th class="text-end">İşlemler</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for s in son_islemler %}
-                            <tr>
-                                <td>{{ s.cari_firma }}</td>
-                                <td class="text-truncate" style="max-width:200px">{{ s.urun }}</td>
-                                <td>{{ s.marka }}</td>
-                                <td>{{ s.get_grup_display }}</td>
-                                <td>{{ s.get_mevsim_display }}</td>
-                                <td class="text-end">{{ s.adet }}</td>
-                                <td class="text-end">₺{{ s.birim_fiyat|floatformat:2 }}</td>
-                                <td class="text-end">₺{{ s.toplam_fiyat|floatformat:2 }}</td>
-                                <td><span class="badge bg-{{ s.get_durum_display_color }}">{{ s.get_durum_display
-                                        }}</span></td>
-                                <td><span class="badge bg-secondary">{{ s.get_ambar_display }}</span></td>
-                                <td class="text-end">
-                                    <a class="btn btn-sm btn-outline-primary"
-                                        href="{% url 'dashboard:siparis_detay' s.id %}">Detay</a>
-                                    <a class="btn btn-sm btn-outline-warning"
-                                        href="{% url 'dashboard:siparis_duzenle' s.id %}">Düzenle</a>
-                                    <a class="btn btn-sm btn-outline-success"
-                                        href="{% url 'dashboard:siparis_whatsapp' s.id %}">WhatsApp</a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="11" class="text-center text-muted py-4">Kayıt bulunamadı.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-</div>
+<!-- New Widgets Row (removed unnecessary lists) -->
 
 <!-- En Çok Alım Yaptığımız Cariler -->
 <div class="row g-4">
-    <div class="col-12">
+    <div class="col-lg-6">
         <div class="card">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-start">
@@ -245,262 +179,466 @@
                 </div>
             </div>
             <div class="card-body">
-                <div id="topCustomersChart" style="min-height: 400px; width: 100%;"></div>
+                <canvas id="topCustomersChart" style="min-height: 400px; width: 100%;"></canvas>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Son Finance İşlemleri bölümü kaldırıldı -->
 {% endblock %}
 
 {% block extra_css %}
 <style>
-/* Dashboard Mobile Responsive Styles */
-@media (max-width: 768px) {
-    /* Page Header Mobile */
-    .d-flex.justify-content-between.align-items-center.mb-4 {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
+    /* Hide any demo charts that might appear */
+    .demo-chart,
+    [data-demo="true"],
+    .order-status-demo {
+        display: none !important;
     }
-    
-    .d-flex.gap-2 {
-        width: 100%;
-        flex-wrap: wrap;
-        gap: 0.5rem !important;
-    }
-    
-    .d-flex.gap-2 .btn {
-        flex: 1;
-        min-width: 120px;
-        font-size: 0.85rem;
-        padding: 0.6rem 0.8rem;
-    }
-    
-    /* Stats Cards Mobile */
-    .row.g-4 {
-        --bs-gutter-x: 1rem;
-        --bs-gutter-y: 1rem;
-    }
-    
-    .stats-card {
-        margin-bottom: 1rem;
-    }
-    
-    .stats-card .card-body {
-        padding: 1.25rem;
-    }
-    
-    .stats-icon {
-        width: 45px;
-        height: 45px;
-        font-size: 1.2rem;
-    }
-    
-    .stats-card h3 {
-        font-size: 1.6rem;
-    }
-    
-    .stats-card h6 {
-        font-size: 0.9rem;
-    }
-    
-    .stats-card small {
-        font-size: 0.8rem;
-    }
-    
-    /* Chart Cards Mobile */
-    .card-header {
-        padding: 1rem;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-    
-    .card-header .btn-group {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .card-header .btn-group .btn {
-        flex: 1;
-    }
-    
-    .card-body {
-        padding: 1rem;
-    }
-    
-    /* Table Mobile */
-    .table-responsive {
-        font-size: 0.85rem;
-        border-radius: 8px;
-    }
-    
-    .table th,
-    .table td {
-        padding: 0.6rem 0.4rem;
-        vertical-align: middle;
-    }
-    
-    .table th {
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-    
-    .table .btn {
-        font-size: 0.75rem;
-        padding: 0.3rem 0.6rem;
-    }
-    
-    .badge {
-        font-size: 0.7rem;
-    }
-    
-    /* Chart Container Mobile */
-    canvas {
-        max-height: 250px !important;
-    }
-}
 
-@media (max-width: 480px) {
-    /* Extra Small Mobile */
-    .d-flex.gap-2 .btn {
-        font-size: 0.8rem;
-        padding: 0.5rem 0.6rem;
-        min-width: 100px;
+    /* Ensure our custom chart is visible */
+    #orderStatusChart {
+        display: block !important;
     }
-    
-    .stats-card .card-body {
-        padding: 1rem;
-    }
-    
-    .stats-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-    }
-    
-    .stats-card h3 {
-        font-size: 1.4rem;
-    }
-    
-    .stats-card h6 {
-        font-size: 0.85rem;
-    }
-    
-    .card-header {
-        padding: 0.75rem;
-    }
-    
-    .card-body {
-        padding: 0.75rem;
-    }
-    
-    .table-responsive {
-        font-size: 0.8rem;
-    }
-    
-    .table th,
-    .table td {
-        padding: 0.5rem 0.3rem;
-    }
-    
-    .table .btn {
-        font-size: 0.7rem;
-        padding: 0.25rem 0.5rem;
-    }
-    
-    canvas {
-        max-height: 200px !important;
-    }
-}
 
-/* Landscape Mobile */
-@media (max-width: 768px) and (orientation: landscape) {
-    .d-flex.justify-content-between.align-items-center.mb-4 {
-        flex-direction: row;
-        align-items: center;
-    }
-    
-    .d-flex.gap-2 {
-        width: auto;
-        flex-wrap: nowrap;
-    }
-    
-    .stats-card .card-body {
-        padding: 1rem;
-    }
-    
-    canvas {
-        max-height: 180px !important;
-    }
-}
+    /* Dashboard Mobile Responsive Styles */
+    @media (max-width: 768px) {
 
-/* Touch Optimizations */
-@media (hover: none) and (pointer: coarse) {
-    .btn {
-        min-height: 44px;
-        touch-action: manipulation;
+        /* Page Header Mobile */
+        .d-flex.justify-content-between.align-items-center.mb-4 {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .d-flex.gap-2 {
+            width: 100%;
+            flex-wrap: wrap;
+            gap: 0.5rem !important;
+        }
+
+        .d-flex.gap-2 .btn {
+            flex: 1;
+            min-width: 120px;
+            font-size: 0.85rem;
+            padding: 0.6rem 0.8rem;
+        }
+
+        /* Stats Cards Mobile */
+        .row.g-4 {
+            --bs-gutter-x: 1rem;
+            --bs-gutter-y: 1rem;
+        }
+
+        .stats-card {
+            margin-bottom: 1rem;
+        }
+
+        .stats-card .card-body {
+            padding: 1.25rem;
+        }
+
+        .stats-icon {
+            width: 45px;
+            height: 45px;
+            font-size: 1.2rem;
+        }
+
+        .stats-card h3 {
+            font-size: 1.6rem;
+        }
+
+        .stats-card h6 {
+            font-size: 0.9rem;
+        }
+
+        .stats-card small {
+            font-size: 0.8rem;
+        }
+
+        /* Chart Cards Mobile */
+        .card-header {
+            padding: 1rem;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .card-header .btn-group {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .card-header .btn-group .btn {
+            flex: 1;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        /* Table Mobile */
+        .table-responsive {
+            font-size: 0.85rem;
+            border-radius: 8px;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.6rem 0.4rem;
+            vertical-align: middle;
+        }
+
+        .table th {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .table .btn {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+        }
+
+        /* Chart Container Mobile */
+        canvas {
+            max-height: 250px !important;
+        }
     }
-    
-    .table .btn {
-        min-height: 36px;
+
+    @media (max-width: 480px) {
+
+        /* Extra Small Mobile */
+        .d-flex.gap-2 .btn {
+            font-size: 0.8rem;
+            padding: 0.5rem 0.6rem;
+            min-width: 100px;
+        }
+
+        .stats-card .card-body {
+            padding: 1rem;
+        }
+
+        .stats-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
+
+        .stats-card h3 {
+            font-size: 1.4rem;
+        }
+
+        .stats-card h6 {
+            font-size: 0.85rem;
+        }
+
+        .card-header {
+            padding: 0.75rem;
+        }
+
+        .card-body {
+            padding: 0.75rem;
+        }
+
+        .table-responsive {
+            font-size: 0.8rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.5rem 0.3rem;
+        }
+
+        .table .btn {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        canvas {
+            max-height: 200px !important;
+        }
     }
-    
-    .card {
-        touch-action: manipulation;
+
+    /* Landscape Mobile */
+    @media (max-width: 768px) and (orientation: landscape) {
+        .d-flex.justify-content-between.align-items-center.mb-4 {
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .d-flex.gap-2 {
+            width: auto;
+            flex-wrap: nowrap;
+        }
+
+        .stats-card .card-body {
+            padding: 1rem;
+        }
+
+        canvas {
+            max-height: 180px !important;
+        }
     }
-}
+
+    /* Touch Optimizations */
+    @media (hover: none) and (pointer: coarse) {
+        .btn {
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        .table .btn {
+            min-height: 36px;
+        }
+
+        .card {
+            touch-action: manipulation;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    // Override problematic demo chart logic from bundled script
+    if (typeof window.M2 !== 'undefined') {
+        // Completely disable all chart initializations that might cause errors
+        const originalInit = window.M2.prototype.init;
+        window.M2.prototype.init = function () {
+            console.log('M2 init called, overriding chart initializations');
+            try {
+                // Only call safe methods, skip chart initializations
+                if (this.loadDashboardData && typeof this.loadDashboardData === 'function') {
+                    this.loadDashboardData();
+                }
+                if (this.populateRecentOrders && typeof this.populateRecentOrders === 'function') {
+                    this.populateRecentOrders();
+                }
+                if (this.initInteractiveElements && typeof this.initInteractiveElements === 'function') {
+                    this.initInteractiveElements();
+                }
+            } catch (e) {
+                console.log('M2 init error caught and ignored:', e);
+            }
+        };
+
+        // Override individual chart methods to prevent errors
+        window.M2.prototype.initStorageChart = function () {
+            const element = document.querySelector("#storageStatusChart");
+            if (!element) {
+                console.log('Storage chart element not found, skipping');
+                return;
+            }
+            try {
+                return originalInit.call(this);
+            } catch (e) {
+                console.log('Storage chart error caught and ignored:', e);
+            }
+        };
+
+        window.M2.prototype.initRevenueChart = function () {
+            console.log('Revenue chart initialization blocked');
+            return;
+        };
+
+        window.M2.prototype.initUserGrowthChart = function () {
+            const element = document.querySelector("#userGrowthChart");
+            if (!element) {
+                console.log('User growth chart element not found, skipping');
+                return;
+            }
+        };
+
+        window.M2.prototype.initOrderStatusChart = function () {
+            console.log('Demo order status chart blocked - using brandDistributionChart instead');
+            return; // Completely block the demo chart
+        };
+
+        window.M2.prototype.initSalesByLocationChart = function () {
+            const element = document.querySelector("#salesByLocationChart");
+            if (!element) {
+                console.log('Sales by location chart element not found, skipping');
+                return;
+            }
+        };
+
+        // Disable random revenue updater from demo script
+        window.M2.prototype.updateChartsWithRealTimeData = function () {
+            console.log('Chart real-time updates disabled');
+        };
+
+        // Override any other problematic methods
+        window.M2.prototype.startRealTimeUpdates = function () {
+            console.log('Real-time updates disabled');
+        };
+
+        // Override demo data generation methods
+        if (window.M2.prototype.generateOrderData) {
+            window.M2.prototype.generateOrderData = function () {
+                console.log('Demo order data generation blocked');
+                return { completed: 0, pending: 0, cancelled: 0, processing: 0 };
+            };
+        }
+
+        // Block any chart that tries to use demo data
+        if (window.M2.prototype.populateOrderStatusChart) {
+            window.M2.prototype.populateOrderStatusChart = function () {
+                console.log('Demo order status chart population blocked');
+                return;
+            };
+        }
+    }
+
+    // AGGRESSIVE CHART.JS OVERRIDE TO BLOCK DEMO CHARTS
+    const originalChartConstructor = window.Chart;
+    if (originalChartConstructor) {
+        window.Chart = function (ctx, config) {
+            // Block demo charts on orderStatusChart canvas
+            if (ctx && ctx.id === 'orderStatusChart') {
+                // Check if this is a demo chart (has demo data)
+                if (config && config.data && config.data.labels) {
+                    const labels = config.data.labels;
+                    const isDemoChart = labels.some(label =>
+                        typeof label === 'string' && (
+                            label.toLowerCase().includes('completed') ||
+                            label.toLowerCase().includes('processing') ||
+                            label.toLowerCase().includes('pending') ||
+                            label.toLowerCase().includes('cancelled')
+                        )
+                    );
+
+                    if (isDemoChart) {
+                        console.log('🚫 BLOCKED DEMO CHART CREATION:', labels);
+                        // Clear the canvas immediately
+                        const canvas = ctx;
+                        const context = canvas.getContext('2d');
+                        context.clearRect(0, 0, canvas.width, canvas.height);
+
+                        return {
+                            destroy: function () { },
+                            update: function () { },
+                            data: { labels: [], datasets: [] }
+                        };
+                    }
+                }
+            }
+
+            return new originalChartConstructor(ctx, config);
+        };
+        // Copy static methods
+        Object.setPrototypeOf(window.Chart, originalChartConstructor);
+        Object.assign(window.Chart, originalChartConstructor);
+    }
+
+    // Global error handler for chart-related errors
+    window.addEventListener('error', function (e) {
+        if (e.message && (
+            e.message.includes('Element not found') ||
+            e.message.includes('storageStatusChart') ||
+            e.message.includes('chart') ||
+            e.filename && e.filename.includes('main-f0Mg-34g.js')
+        )) {
+            console.log('Chart-related error caught and suppressed:', e.message);
+            e.preventDefault();
+            return true;
+        }
+    });
+
+    // Global promise rejection handler
+    window.addEventListener('unhandledrejection', function (e) {
+        if (e.reason && (
+            e.reason.message && e.reason.message.includes('Element not found') ||
+            e.reason.toString().includes('chart')
+        )) {
+            console.log('Chart-related promise rejection caught and suppressed:', e.reason);
+            e.preventDefault();
+            return true;
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
         console.log('Dashboard loaded');
 
-        // Revenue Chart
+        // Revenue Chart (live via API) - create after data to avoid hover glitches
         const revenueCtx = document.getElementById('revenueChart');
         if (revenueCtx) {
-            const monthlyRevenue = JSON.parse('{{ monthly_revenue|escapejs }}');
-            const monthlyLabels = JSON.parse('{{ monthly_labels|escapejs }}');
-
-            const revenueChart = new Chart(revenueCtx, {
-                type: 'line',
-                data: {
-                    labels: monthlyLabels,
-                    datasets: [{
-                        label: 'Ciro (₺)',
-                        data: monthlyRevenue,
-                        borderColor: '#6366f1',
-                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0,0,0,0.1)'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    }
+            try {
+                if (window.dashboardManager && window.dashboardManager.charts && typeof window.dashboardManager.charts.delete === 'function') {
+                    window.dashboardManager.charts.delete('revenue');
                 }
-            });
+            } catch (e) { }
+
+            let revenueChart = null;
+
+            async function loadFinanceOverview() {
+                try {
+                    const res = await fetch('/dashboard/api/finance/overview/');
+                    const data = await res.json();
+                    if (!data.success) return;
+
+                    if (!revenueChart) {
+                        revenueChart = new Chart(revenueCtx, {
+                            type: 'line',
+                            data: {
+                                labels: data.labels,
+                                datasets: [
+                                    {
+                                        label: 'Gelir (₺)',
+                                        data: data.income,
+                                        borderColor: '#16a34a',
+                                        backgroundColor: 'rgba(22, 163, 74, 0.15)',
+                                        borderWidth: 3,
+                                        fill: true,
+                                        tension: 0.4,
+                                        pointRadius: 3
+                                    },
+                                    {
+                                        label: 'Gider (₺)',
+                                        data: data.expense,
+                                        borderColor: '#ef4444',
+                                        backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                        borderWidth: 3,
+                                        fill: true,
+                                        tension: 0.4,
+                                        pointRadius: 3
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: { mode: 'nearest', intersect: false },
+                                hover: { mode: 'nearest', intersect: false },
+                                animations: false,
+                                plugins: {
+                                    legend: { display: true, position: 'top' },
+                                    tooltip: { enabled: true }
+                                },
+                                scales: {
+                                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.1)' } },
+                                    x: { grid: { display: false } }
+                                }
+                            }
+                        });
+                    } else {
+                        revenueChart.data.labels = data.labels;
+                        revenueChart.data.datasets[0].data = data.income;
+                        revenueChart.data.datasets[1].data = data.expense;
+                        revenueChart.update('none');
+                    }
+                } catch (e) {
+                    console.error('Finance overview load error', e);
+                }
+            }
+
+            // initial load and periodic refresh each 60s
+            loadFinanceOverview();
+            setInterval(loadFinanceOverview, 60000);
         }
 
         // Lastik Satış Analizi Chart (3D Bar Chart)
@@ -616,69 +754,122 @@
             });
         }
 
-        // Lastik Marka Dağılımı Chart (Doughnut)
-        const orderStatusCtx = document.getElementById('orderStatusChart');
-        if (orderStatusCtx) {
-            const brandChartData = JSON.parse('{{ brand_chart_data|escapejs }}');
+        // Lastik Marka Dağılımı Chart (Doughnut) - Clean Implementation
+        const brandDistributionCtx = document.getElementById('brandDistributionChart');
+        if (brandDistributionCtx) {
+            let brandChart = null;
 
-            const brandChart = new Chart(orderStatusCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: brandChartData.labels,
-                    datasets: [{
-                        data: brandChartData.data,
-                        backgroundColor: brandChartData.colors,
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true,
-                                generateLabels: function (chart) {
-                                    const data = chart.data;
-                                    if (data.labels.length && data.datasets.length) {
-                                        const dataset = data.datasets[0];
-                                        const total = dataset.data.reduce((a, b) => a + b, 0);
+            // Create brand distribution chart
+            async function createBrandChart() {
+                try {
+                    const response = await fetch('/dashboard/api/brand-distribution/');
+                    const data = await response.json();
 
-                                        return data.labels.map((label, i) => {
-                                            const value = dataset.data[i];
-                                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-
-                                            return {
-                                                text: `${label}: ${value} (${percentage}%)`,
-                                                fillStyle: dataset.backgroundColor[i],
-                                                strokeStyle: dataset.backgroundColor[i],
-                                                lineWidth: 0,
-                                                pointStyle: 'circle',
-                                                hidden: false,
-                                                index: i
-                                            };
-                                        });
+                    if (data.success && data.brands && data.brands.length > 0) {
+                        // Create chart with real data
+                        brandChart = new Chart(brandDistributionCtx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: data.brands.map(brand => brand.name),
+                                datasets: [{
+                                    data: data.brands.map(brand => brand.count),
+                                    backgroundColor: data.brands.map(brand => brand.color),
+                                    borderWidth: 2,
+                                    borderColor: '#ffffff'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: {
+                                            padding: 20,
+                                            usePointStyle: true,
+                                            font: {
+                                                size: 12
+                                            }
+                                        }
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function (context) {
+                                                const label = context.label || '';
+                                                const value = context.parsed;
+                                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                                return `${label}: ${value} adet (${percentage}%)`;
+                                            }
+                                        }
                                     }
-                                    return [];
                                 }
                             }
+                        });
+
+                        console.log(`Brand chart created with ${data.brands.length} brands`);
+                    } else {
+                        // No data - show empty state
+                        brandChart = new Chart(brandDistributionCtx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['Henüz veri yok'],
+                                datasets: [{
+                                    data: [1],
+                                    backgroundColor: ['#f1f5f9'],
+                                    borderWidth: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    tooltip: {
+                                        enabled: false
+                                    }
+                                }
+                            }
+                        });
+
+                        console.log('No brand data available');
+                    }
+                } catch (error) {
+                    console.error('Brand chart creation error:', error);
+                    // Show error state
+                    brandChart = new Chart(brandDistributionCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Veri yüklenemedi'],
+                            datasets: [{
+                                data: [1],
+                                backgroundColor: ['#ef4444'],
+                                borderWidth: 0
+                            }]
                         },
-                        tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                    return `${label}: ${value} adet (${percentage}%)`;
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    enabled: false
                                 }
                             }
                         }
-                    }
+                    });
                 }
-            });
+            }
+
+            // Create chart
+            createBrandChart();
+
+            // Refresh every 5 minutes
+            setInterval(createBrandChart, 300000);
         }
 
 

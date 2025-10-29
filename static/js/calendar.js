@@ -27,12 +27,15 @@ document.addEventListener('alpine:init', () => {
     init() {
       this.loadEvents();
       
-      // Bugünün tarihini doğru şekilde al (timezone offset'i düzelt)
+      // Bugünün tarihini doğru şekilde al
       const today = new Date();
-      const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayString = `${year}-${month}-${day}`;
       
       this.selectedDate = today;
-      this.selectedDay = localDate.toISOString().split('T')[0];
+      this.selectedDay = todayString;
 
       // Initialize calendar view
       this.currentDate = today;
@@ -170,7 +173,12 @@ document.addEventListener('alpine:init', () => {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
 
-        const dateString = date.toISOString().split('T')[0];
+        // Doğru tarih formatı oluştur
+        const year = date.getFullYear();
+        const month_num = String(date.getMonth() + 1).padStart(2, '0');
+        const day_num = String(date.getDate()).padStart(2, '0');
+        const dateString = `${year}-${month_num}-${day_num}`;
+        
         const hasEvents = this.events.some(event => event.date === dateString);
 
         days.push({
@@ -198,7 +206,12 @@ document.addEventListener('alpine:init', () => {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
 
-        const dateString = date.toISOString().split('T')[0];
+        // Doğru tarih formatı oluştur
+        const year = date.getFullYear();
+        const month_num = String(date.getMonth() + 1).padStart(2, '0');
+        const day_num = String(date.getDate()).padStart(2, '0');
+        const dateString = `${year}-${month_num}-${day_num}`;
+        
         const dayEvents = this.getEventsForDate(dateString).filter(event =>
           this.visibleTypes.includes(event.type)
         );
@@ -224,8 +237,14 @@ document.addEventListener('alpine:init', () => {
         const date = new Date(startOfWeek);
         date.setDate(startOfWeek.getDate() + i);
 
+        // Doğru tarih formatı oluştur
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const dateString = `${year}-${month}-${day}`;
+        
         days.push({
-          date: date.toISOString().split('T')[0],
+          date: dateString,
           dayName: date.toLocaleDateString('tr-TR', { weekday: 'short' }),
           dayNumber: date.getDate(),
           isToday: this.isToday(date)
@@ -288,27 +307,36 @@ document.addEventListener('alpine:init', () => {
 
     goToToday() {
       const today = new Date();
-      const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayString = `${year}-${month}-${day}`;
       
       this.currentDate = today;
       this.miniCalendarDate = today;
-      this.selectedDay = localDate.toISOString().split('T')[0];
+      this.selectedDay = todayString;
     },
 
     switchView(view) {
       this.currentView = view;
       if (view === 'day' && !this.selectedDay) {
-        this.selectedDay = new Date().toISOString().split('T')[0];
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        this.selectedDay = `${year}-${month}-${day}`;
       }
     },
 
     // Date Methods
     selectDate(dateString) {
       this.selectedDay = dateString;
-      this.selectedDate = new Date(dateString);
+      // Timezone offset'ini düzelt
+      const date = new Date(dateString + 'T12:00:00');
+      this.selectedDate = date;
       if (this.currentView === 'day') {
         // Update current date for day view
-        this.currentDate = new Date(dateString);
+        this.currentDate = date;
       }
     },
 
@@ -512,11 +540,14 @@ document.addEventListener('alpine:init', () => {
     ],
 
     init() {
-      // Initialize with today's date (timezone offset'i düzelt)
+      // Initialize with today's date (doğru tarih formatı)
       const today = new Date();
-      const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayString = `${year}-${month}-${day}`;
       
-      this.eventData.date = localDate.toISOString().split('T')[0];
+      this.eventData.date = todayString;
       this.eventData.time = '13:50';
       this.eventData.recurrence = 'none';
       this.eventData.selectedReminders = ['15'];
@@ -698,12 +729,15 @@ document.addEventListener('alpine:init', () => {
     resetForm() {
       console.log('Resetting form...');
       const today = new Date();
-      const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayString = `${year}-${month}-${day}`;
       
       this.eventData = {
         title: '',
         type: 'reminder',
-        date: localDate.toISOString().split('T')[0],
+        date: todayString,
         time: '13:50',
         description: '',
         duration: '60',

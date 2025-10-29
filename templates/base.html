@@ -42,6 +42,35 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% load static %}{% static 'main-DLfE7m78.css' %}">
 
+    <!-- Override Bootstrap Icons font-face to use CDN fonts to avoid local font decode warnings -->
+    <style>
+        @font-face {
+            font-family: "bootstrap-icons";
+            src: url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/fonts/bootstrap-icons.woff2") format("woff2"),
+                url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/fonts/bootstrap-icons.woff") format("woff");
+            font-display: swap;
+        }
+
+        /* Finance Payment Fields Styles */
+        .payment-field {
+            transition: all 0.3s ease;
+        }
+
+        .payment-field:focus {
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        }
+
+        .payment-field.selected {
+            background-color: #e8f5e8 !important;
+            border-color: #28a745 !important;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        }
+
+        .payment-field.focused {
+            background-color: #f8f9fa !important;
+        }
+    </style>
+
     {% block extra_css %}{% endblock %}
 
     <!-- Sidebar Toggle Styles -->
@@ -141,7 +170,14 @@
             padding: 1rem 0.5rem;
         }
 
+        /* Hide toggle button when sidebar is collapsed (Railway style) */
         .admin-wrapper.sidebar-collapsed .sidebar-toggle-btn {
+            display: none !important;
+        }
+
+        /* Hide unwanted toast notifications (CSS fallback) */
+        .toast-body:has(span:contains("Application loaded successfully")),
+        .toast:has(.toast-body span:contains("Application loaded successfully")) {
             display: none !important;
         }
 
@@ -431,15 +467,6 @@
 </head>
 
 <body data-page="{% block page_name %}dashboard{% endblock %}" class="admin-layout">
-    <!-- Loading Screen -->
-    <div id="loading-screen" class="loading-screen">
-        <div class="loading-spinner">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-    </div>
-
     <!-- Main Wrapper -->
     <div class="admin-wrapper" id="admin-wrapper">
 
@@ -457,7 +484,7 @@
                     <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard:index' %}">
                         <img src="{% load static %}{% static 'images/logo.svg' %}" alt="Logo" height="32"
                             class="d-inline-block align-text-top me-2">
-                        <h1 class="h4 mb-0 fw-bold text-primary">MesTakip</h1>
+                       
                     </a>
 
                     <!-- Search Bar -->
@@ -484,9 +511,10 @@
                         </button>
 
                         <!-- Notifications -->
-                        <div class="dropdown me-2" id="notificationDropdown">
+                        <div class="dropdown me-2">
                             <button class="btn btn-outline-secondary position-relative" type="button"
-                                data-bs-toggle="dropdown" aria-expanded="false" id="notificationButton">
+                                data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"
+                                id="notificationButton">
                                 <i class="bi bi-bell"></i>
                                 <span
                                     class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
@@ -494,12 +522,13 @@
                                     0
                                 </span>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end"
+                            <ul class="dropdown-menu dropdown-menu-end" id="notificationDropdownMenu"
+                                aria-labelledby="notificationButton"
                                 style="width: 350px; max-height: 400px; overflow-y: auto;">
                                 <li class="dropdown-header d-flex justify-content-between align-items-center">
                                     <span>Bildirimler</span>
                                     <button class="btn btn-sm btn-link text-primary p-0" id="markAllReadBtn"
-                                        style="font-size: 0.75rem;">
+                                        style="font-size: 0.75rem;" type="button">
                                         Tümünü Okundu İşaretle
                                     </button>
                                 </li>
@@ -519,7 +548,8 @@
                         {% if user.is_authenticated %}
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary d-flex align-items-center" type="button"
-                                data-bs-toggle="dropdown" aria-expanded="false">
+                                data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                                id="userMenuButton">
                                 <img src="{% load static %}{% static 'images/avatar-placeholder.svg' %}"
                                     alt="User Avatar" width="24" height="24" class="rounded-circle me-2">
                                 <span class="d-none d-md-inline">
@@ -533,7 +563,8 @@
                                 </span>
                                 <i class="bi bi-chevron-down ms-1"></i>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
+                            <ul class="dropdown-menu dropdown-menu-end" id="userMenuDropdown"
+                                aria-labelledby="userMenuButton">
                                 <li>
                                     <h6 class="dropdown-header">
                                         {% if user.first_name and user.last_name %}
@@ -595,6 +626,7 @@
 
                 <nav class="sidebar-nav">
                     <ul class="nav flex-column">
+                        <!-- Ana -->
                         <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}"
                                 href="{% url 'dashboard:index' %}">
@@ -602,56 +634,51 @@
                                 <span>Dashboard</span>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard:analytics' %}">
-                                <i class="bi bi-graph-up"></i>
-                                <span>Analytics</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard:users' %}">
-                                <i class="bi bi-people"></i>
-                                <span>Kullanıcılar</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard:products' %}">
-                                <i class="bi bi-box"></i>
-                                <span>Products</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard:orders' %}">
-                                <i class="bi bi-bag-check"></i>
-                                <span>Sipariş Envanteri Dashboard</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard:forms' %}">
-                                <i class="bi bi-ui-checks"></i>
-                                <span>Kontrol Edilen Siparişler</span>
+                       
 
-                            </a>
+                        <!-- Siparişler -->
+                        <li class="nav-item mt-3">
+                            <small class="text-muted px-3 text-uppercase fw-bold">Siparişler</small>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard:elements' %}">
+                            <a class="nav-link" data-bs-toggle="collapse" data-bs-target="#sidebarOrders" href="#" role="button" aria-expanded="false" aria-controls="sidebarOrders">
                                 <i class="bi bi-box-seam"></i>
-                                <span>Sipariş Envanteri</span>
-
+                                <span>Sipariş Yönetimi</span>
+                                <i class="bi bi-chevron-down ms-auto"></i>
                             </a>
+                            <div class="collapse" id="sidebarOrders">
+                                <ul class="nav flex-column ms-3 my-2">
+                                    <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:analytics' %}"><span>Analist</span></a></li>
+                                    <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:elements' %}"><span>Envanter</span></a></li>
+                                    <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:forms' %}"><span>Kontrol Edilen</span></a></li>
+                                    <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:reports' %}"><span>İptal Raporu</span></a></li>
+                                </ul>
+                            </div>
+                        </li>
+
+                        <!-- Finance -->
+                        <li class="nav-item mt-3">
+                            <small class="text-muted px-3 text-uppercase fw-bold">Finance</small>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard:reports' %}">
-                                <i class="bi bi-file-earmark-text"></i>
-                                <span>İptal Edilen Siparişler Raporu</span>
+                            <a class="nav-link" data-bs-toggle="collapse" data-bs-target="#sidebarFinance" href="#" role="button" aria-expanded="false" aria-controls="sidebarFinance">
+                                <i class="bi bi-cash-coin"></i>
+                                <span>Gelir/Gider</span>
+                                <i class="bi bi-chevron-down ms-auto"></i>
                             </a>
+                            <div class="collapse" id="sidebarFinance">
+                                <ul class="nav flex-column ms-3 my-2">
+                                    <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:products' %}"><span>İşlemler</span></a></li>
+                                    <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:finance' %}"><span>Yeni İşlem</span></a></li>
+                                    <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:messages' %}"><span>Toplamlar</span></a></li>
+                                    <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:kategoriler' %}"><span>Kategoriler</span></a></li>
+                                </ul>
+                            </div>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard:messages' %}">
-                                <i class="bi bi-chat-dots"></i>
-                                <span>Messages</span>
 
-                            </a>
+                        <!-- Diğer -->
+                        <li class="nav-item mt-3">
+                            <small class="text-muted px-3 text-uppercase fw-bold">Diğer</small>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'dashboard:calendar' %}">
@@ -660,11 +687,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard:files' %}">
-                                <i class="bi bi-folder2-open"></i>
-                                <span>Files</span>
+                            <a class="nav-link" href="{% url 'dashboard:users' %}">
+                                <i class="bi bi-people"></i>
+                                <span>Kullanıcılar</span>
                             </a>
                         </li>
+
                         <li class="nav-item mt-3">
                             <small class="text-muted px-3 text-uppercase fw-bold">Admin</small>
                         </li>
@@ -724,8 +752,131 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Custom JS -->
-    <script src="{% load static %}{% static 'main-f0Mg-34g.js' %}"></script>
+    <!-- Chart.js Configuration -->
+    <script>
+        // Ensure Chart.js is properly configured
+        if (typeof Chart !== 'undefined') {
+            // Chart.js v4+ has Filler plugin built-in, just need to ensure defaults are set
+            Chart.defaults.elements.line.fill = false; // Disable fill by default to avoid warnings
+            console.log('Chart.js loaded successfully, version:', Chart.version);
+        }
+    </script>
+
+    <!-- Suppress unwanted toast notifications and console messages - MUST BE BEFORE main.js -->
+    <script>
+        // Hide unwanted toast notifications
+        (function () {
+            // MutationObserver to watch for toast notifications
+            const observer = new MutationObserver(function (mutations) {
+                mutations.forEach(function (mutation) {
+                    mutation.addedNodes.forEach(function (node) {
+                        if (node.nodeType === 1) { // Element node
+                            // Check if it's a toast with unwanted message
+                            const toastBody = node.querySelector('.toast-body');
+                            if (toastBody) {
+                                const text = toastBody.textContent || toastBody.innerText;
+                                if (text.includes('Application loaded successfully') ||
+                                    text.includes('Admin App initialized') ||
+                                    text.includes('Dashboard Manager initialized')) {
+                                    // Remove the toast immediately
+                                    node.remove();
+                                    console.log('🔇 Blocked unwanted toast notification');
+                                }
+                            }
+                        }
+                    });
+                });
+            });
+
+            // Start observing when DOM is ready
+            if (document.body) {
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
+            } else {
+                document.addEventListener('DOMContentLoaded', function () {
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                });
+            }
+        })();
+
+        // Override console methods to filter out unwanted messages
+        (function () {
+            const originalLog = console.log;
+            const originalInfo = console.info;
+            const originalDebug = console.debug;
+            const originalWarn = console.warn;
+
+            // List of unwanted message patterns
+            const blockedPatterns = [
+                'Application loaded successfully',
+                'application loaded successfully',
+                'App loaded successfully',
+                'Admin App initialized',
+                'admin app initialized',
+                'Dashboard Manager initialized',
+                'Advanced Dashboard Manager',
+                'dashboard manager',
+                '🚀',
+                'loaded successfully',
+                'initialized successfully'
+            ];
+
+            // Check if message should be blocked
+            function shouldBlock(message) {
+                const msgStr = String(message).toLowerCase();
+                return blockedPatterns.some(pattern =>
+                    msgStr.includes(pattern.toLowerCase())
+                );
+            }
+
+            // Override console.log
+            console.log = function (...args) {
+                const message = args.join(' ');
+                if (shouldBlock(message)) {
+                    return; // Block this message
+                }
+                originalLog.apply(console, args);
+            };
+
+            // Override console.info
+            console.info = function (...args) {
+                const message = args.join(' ');
+                if (shouldBlock(message)) {
+                    return; // Block this message
+                }
+                originalInfo.apply(console, args);
+            };
+
+            // Override console.debug
+            console.debug = function (...args) {
+                const message = args.join(' ');
+                if (shouldBlock(message)) {
+                    return; // Block this message
+                }
+                originalDebug.apply(console, args);
+            };
+
+            // Override console.warn (optional)
+            console.warn = function (...args) {
+                const message = args.join(' ');
+                if (shouldBlock(message)) {
+                    return; // Block this message
+                }
+                originalWarn.apply(console, args);
+            };
+
+            // Log that filter is active
+            originalLog('%c🔇 Console Filter Active', 'color: #888; font-style: italic;');
+        })();
+    </script>
+
+    <!-- Custom JS (ES Module build) -->
+    <script type="module" src="{% load static %}{% static 'main-f0Mg-34g.js' %}"></script>
 
     <!-- Page specific scripts -->
     {% block extra_js %}
@@ -733,6 +884,9 @@
 
     <!-- Sidebar Toggle Script -->
     <script>
+        // FORCE RESET: Sidebar açık olsun (bu satırı bir kez çalıştırın, sonra silin)
+        localStorage.setItem('sidebar-collapsed', 'false');
+
         document.addEventListener('DOMContentLoaded', function () {
             console.log('Sidebar toggle script loaded');
             const toggleButton = document.querySelector('[data-sidebar-toggle]');
@@ -742,10 +896,20 @@
             console.log('Wrapper found:', wrapper);
 
             if (toggleButton && wrapper) {
-                // Set initial state from localStorage
-                const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-                if (isCollapsed) {
+                // Set initial state from localStorage (default: open/false)
+                const savedState = localStorage.getItem('sidebar-collapsed');
+
+                // If no saved state, default to open (false)
+                // If saved state is 'true', collapse the sidebar
+                if (savedState === 'true') {
                     wrapper.classList.add('sidebar-collapsed');
+                } else {
+                    // Ensure sidebar is open by default
+                    wrapper.classList.remove('sidebar-collapsed');
+                    // Set default state if not set
+                    if (savedState === null) {
+                        localStorage.setItem('sidebar-collapsed', 'false');
+                    }
                 }
 
                 // Attach click listener
@@ -763,6 +927,23 @@
                         localStorage.setItem('sidebar-collapsed', 'true');
                     }
                 });
+
+                // Logo'ya tıklayınca sidebar'ı aç (Railway style)
+                const logo = document.querySelector('.admin-sidebar .navbar-brand');
+                if (logo) {
+                    logo.addEventListener('click', function (e) {
+                        const isCurrentlyCollapsed = wrapper.classList.contains('sidebar-collapsed');
+
+                        if (isCurrentlyCollapsed) {
+                            e.preventDefault();
+                            // Show sidebar
+                            wrapper.classList.remove('sidebar-collapsed');
+                            localStorage.setItem('sidebar-collapsed', 'false');
+                            console.log('Sidebar opened via logo click');
+                        }
+                        // Eğer sidebar açıksa, normal link davranışı (dashboard'a git)
+                    });
+                }
             }
         });
     </script>
@@ -983,12 +1164,26 @@
             filter: brightness(0.9) contrast(1.1);
         }
 
-        /* Bildirim stilleri */
+        /* Header - Fixed at top */
+        .admin-header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Bildirim dropdown */
+        .dropdown-menu {
+            z-index: 1050;
+        }
+
         .notification-item {
             padding: 12px 16px;
             border-bottom: 1px solid #e2e8f0;
             cursor: pointer;
             transition: background-color 0.2s;
+            display: block;
         }
 
         .notification-item:hover {
@@ -998,6 +1193,11 @@
         .notification-item.unread {
             background-color: #eff6ff;
             border-left: 3px solid #3b82f6;
+        }
+
+        #notificationList {
+            padding: 0;
+            margin: 0;
         }
 
         .notification-icon {
@@ -1092,16 +1292,10 @@
                 // Tümünü okundu işaretle butonu
                 const markAllReadBtn = document.getElementById('markAllReadBtn');
                 if (markAllReadBtn) {
-                    markAllReadBtn.addEventListener('click', () => {
+                    markAllReadBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         this.markAllAsRead();
-                    });
-                }
-
-                // Bildirim dropdown açıldığında
-                const notificationButton = document.getElementById('notificationButton');
-                if (notificationButton) {
-                    notificationButton.addEventListener('click', () => {
-                        this.loadNotifications();
                     });
                 }
             }
@@ -1144,10 +1338,10 @@
 
                 if (this.notifications.length === 0) {
                     listContainer.innerHTML = `
-                    <li class="dropdown-item text-center text-muted py-3">
+                    <div class="dropdown-item text-center text-muted py-3">
                         <i class="bi bi-bell-slash fs-4 d-block mb-2"></i>
                         Henüz bildirim yok
-                    </li>
+                    </div>
                 `;
                     return;
                 }
@@ -1158,7 +1352,7 @@
                     const timeAgo = this.getTimeAgo(notification.scheduled_time);
 
                     html += `
-                    <li class="notification-item ${isUnread ? 'unread' : ''}" 
+                    <div class="notification-item ${isUnread ? 'unread' : ''}" 
                         data-notification-id="${notification.id}">
                         <div class="d-flex">
                             <div class="notification-icon" style="background-color: ${notification.color}">
@@ -1180,7 +1374,7 @@
                                 ` : ''}
                             </div>
                         </div>
-                    </li>
+                    </div>
                 `;
                 });
 
@@ -1332,10 +1526,121 @@
 
         // Sayfa yüklendiğinde bildirim sistemini başlat
         document.addEventListener('DOMContentLoaded', function () {
-            window.notificationSystem = new NotificationSystem();
+            console.log('=== Bildirim Sistemi Başlatılıyor ===');
 
-            // Tarayıcı bildirim izni iste
-            window.notificationSystem.requestNotificationPermission();
+            // Bootstrap'in yüklenmesini bekle
+            function initializeDropdowns() {
+                // Bootstrap kontrolü
+                if (typeof bootstrap === 'undefined') {
+                    console.warn('Bootstrap henüz yüklenmedi, bekleniyor...');
+                    setTimeout(initializeDropdowns, 100);
+                    return;
+                }
+                console.log('✓ Bootstrap yüklendi, versiyon:', bootstrap.Dropdown.VERSION);
+
+                // Bildirim sistemini başlat
+                window.notificationSystem = new NotificationSystem();
+                window.notificationSystem.requestNotificationPermission();
+
+                // Dropdown'ı manuel olarak başlat
+                const notificationButton = document.getElementById('notificationButton');
+                const notificationDropdown = document.getElementById('notificationDropdownMenu');
+
+                if (notificationButton && notificationDropdown) {
+                    console.log('✓ Bildirim butonu ve dropdown bulundu');
+
+                    // Bootstrap Dropdown instance oluştur
+                    try {
+                        // Önce mevcut instance'ı kontrol et
+                        let dropdownInstance = bootstrap.Dropdown.getInstance(notificationButton);
+
+                        if (!dropdownInstance) {
+                            // Yeni instance oluştur
+                            dropdownInstance = new bootstrap.Dropdown(notificationButton, {
+                                autoClose: 'outside',
+                                boundary: 'viewport'
+                            });
+                            console.log('✓ Dropdown instance oluşturuldu');
+                        } else {
+                            console.log('✓ Dropdown instance zaten mevcut');
+                        }
+
+                        // Test için butona tıklandığında log
+                        notificationButton.addEventListener('click', function (e) {
+                            console.log('Bildirim butonuna tıklandı');
+                            console.log('Dropdown instance:', dropdownInstance);
+                            console.log('Button aria-expanded:', notificationButton.getAttribute('aria-expanded'));
+                        });
+
+                        // Dropdown açıldığında
+                        notificationButton.addEventListener('shown.bs.dropdown', function () {
+                            console.log('✓ Dropdown açıldı!');
+                            window.notificationSystem.loadNotifications();
+                        });
+
+                        // Dropdown kapandığında
+                        notificationButton.addEventListener('hidden.bs.dropdown', function () {
+                            console.log('✓ Dropdown kapandı');
+                        });
+                    } catch (error) {
+                        console.error('Dropdown oluşturma hatası:', error);
+                    }
+                } else {
+                    console.error('HATA: Bildirim butonu veya dropdown bulunamadı!');
+                    console.log('notificationButton:', notificationButton);
+                    console.log('notificationDropdown:', notificationDropdown);
+                }
+
+                // Kullanıcı menüsü dropdown'ını başlat
+                const userMenuButton = document.getElementById('userMenuButton');
+                const userMenuDropdown = document.getElementById('userMenuDropdown');
+
+                if (userMenuButton && userMenuDropdown) {
+                    console.log('✓ Kullanıcı menüsü butonu ve dropdown bulundu');
+
+                    try {
+                        // Önce mevcut instance'ı kontrol et
+                        let userDropdownInstance = bootstrap.Dropdown.getInstance(userMenuButton);
+
+                        if (!userDropdownInstance) {
+                            // Yeni instance oluştur
+                            userDropdownInstance = new bootstrap.Dropdown(userMenuButton, {
+                                autoClose: true,
+                                boundary: 'viewport'
+                            });
+                            console.log('✓ Kullanıcı menüsü dropdown instance oluşturuldu');
+                        } else {
+                            console.log('✓ Kullanıcı menüsü dropdown instance zaten mevcut');
+                        }
+
+                        // Test için butona tıklandığında log
+                        userMenuButton.addEventListener('click', function (e) {
+                            console.log('Kullanıcı menüsü butonuna tıklandı');
+                            console.log('Dropdown instance:', userDropdownInstance);
+                            console.log('Button aria-expanded:', userMenuButton.getAttribute('aria-expanded'));
+                        });
+
+                        // Dropdown açıldığında
+                        userMenuButton.addEventListener('shown.bs.dropdown', function () {
+                            console.log('✓ Kullanıcı menüsü açıldı!');
+                        });
+
+                        // Dropdown kapandığında
+                        userMenuButton.addEventListener('hidden.bs.dropdown', function () {
+                            console.log('✓ Kullanıcı menüsü kapandı');
+                        });
+                    } catch (error) {
+                        console.error('Kullanıcı menüsü dropdown oluşturma hatası:', error);
+                    }
+                } else {
+                    console.log('Kullanıcı menüsü bulunamadı (kullanıcı giriş yapmamış olabilir)');
+                }
+
+                console.log('=== Bildirim Sistemi Hazır ===');
+            }
+
+            // İlk çağrı
+            initializeDropdowns();
         });
     </script>
 </body>
@@ -1402,3 +1707,99 @@
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
         }
     </style>
+
+    <!-- Dropdown Manuel Başlatma -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('=== Dropdown Başlatma Scripti ===');
+
+            // Bootstrap'in yüklendiğini kontrol et
+            if (typeof bootstrap === 'undefined') {
+                console.error('Bootstrap yüklenmedi!');
+                return;
+            }
+
+            console.log('✓ Bootstrap yüklendi, versiyon:', bootstrap.Dropdown.VERSION);
+
+            // Bildirim dropdown'ını başlat
+            const notificationButton = document.getElementById('notificationButton');
+            const notificationDropdown = document.getElementById('notificationDropdownMenu');
+
+            if (notificationButton && notificationDropdown) {
+                console.log('✓ Bildirim butonu ve dropdown bulundu');
+
+                // Dropdown instance oluştur
+                const notificationDropdownInstance = new bootstrap.Dropdown(notificationButton, {
+                    autoClose: 'outside',
+                    boundary: 'viewport'
+                });
+
+                console.log('✓ Bildirim dropdown instance oluşturuldu');
+
+                // Manuel toggle için event listener ekle
+                notificationButton.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    console.log('Bildirim butonuna tıklandı');
+                    console.log('Dropdown instance:', notificationDropdownInstance);
+                    console.log('Button aria-expanded:', notificationButton.getAttribute('aria-expanded'));
+
+                    // Dropdown'ı toggle et
+                    notificationDropdownInstance.toggle();
+
+                    // Açıldığında/kapandığında log
+                    if (notificationButton.getAttribute('aria-expanded') === 'true') {
+                        console.log('✓ Dropdown açıldı!');
+                    } else {
+                        console.log('✓ Dropdown kapandı');
+                    }
+                });
+            } else {
+                console.error('Bildirim butonu veya dropdown bulunamadı!');
+            }
+
+            // Kullanıcı menüsü dropdown'ını başlat
+            const userMenuButton = document.getElementById('userMenuButton');
+            const userMenuDropdown = document.getElementById('userMenuDropdown');
+
+            if (userMenuButton && userMenuDropdown) {
+                console.log('✓ Kullanıcı menüsü butonu ve dropdown bulundu');
+
+                // Dropdown instance oluştur
+                const userMenuDropdownInstance = new bootstrap.Dropdown(userMenuButton, {
+                    autoClose: true,
+                    boundary: 'viewport'
+                });
+
+                console.log('✓ Kullanıcı menüsü dropdown instance oluşturuldu');
+
+                // Manuel toggle için event listener ekle
+                userMenuButton.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    console.log('Kullanıcı menüsü butonuna tıklandı');
+                    console.log('Dropdown instance:', userMenuDropdownInstance);
+                    console.log('Button aria-expanded:', userMenuButton.getAttribute('aria-expanded'));
+
+                    // Dropdown'ı toggle et
+                    userMenuDropdownInstance.toggle();
+
+                    // Açıldığında/kapandığında log
+                    if (userMenuButton.getAttribute('aria-expanded') === 'true') {
+                        console.log('✓ Kullanıcı menüsü açıldı!');
+                    } else {
+                        console.log('✓ Kullanıcı menüsü kapandı');
+                    }
+                });
+            } else {
+                console.error('Kullanıcı menüsü butonu veya dropdown bulunamadı!');
+            }
+
+            console.log('=== Dropdown Sistemi Hazır ===');
+        });
+    </script>
+    </body>
+
+    </html>

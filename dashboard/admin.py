@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Siparis, Event, UserProfile, Notification
+from .models import Siparis, UserProfile, Notification, Transaction, TransactionCategory
+# Event geçici olarak devre dışı
 
 @admin.register(Siparis)
 class SiparisAdmin(admin.ModelAdmin):
@@ -57,61 +58,62 @@ class SiparisAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         return super().get_queryset(request).select_related()
 
-@admin.register(Event)
-class EventAdmin(admin.ModelAdmin):
-    """Etkinlik admin paneli"""
-    
-    list_display = [
-        'id', 'title', 'type', 'date', 'time', 'priority', 
-        'location', 'created_by', 'created_at'
-    ]
-    
-    list_filter = [
-        'type', 'priority', 'date', 'recurring', 'created_at'
-    ]
-    
-    search_fields = [
-        'title', 'description', 'location', 'attendees'
-    ]
-    
-    list_editable = [
-        'type', 'priority'
-    ]
-    
-    readonly_fields = [
-        'created_at', 'updated_at'
-    ]
-    
-    fieldsets = (
-        ('Temel Bilgiler', {
-            'fields': ('title', 'description', 'type', 'priority')
-        }),
-        ('Tarih ve Zaman', {
-            'fields': ('date', 'time', 'duration')
-        }),
-        ('Konum ve Katılımcılar', {
-            'fields': ('location', 'attendees')
-        }),
-        ('Tekrarlama', {
-            'fields': ('recurring', 'recurrence'),
-            'classes': ('collapse',)
-        }),
-        ('Hatırlatıcılar', {
-            'fields': ('reminders',),
-            'classes': ('collapse',)
-        }),
-        ('Sistem Bilgileri', {
-            'fields': ('created_by', 'created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    ordering = ['-created_at']
-    
-    def save_model(self, request, obj, form, change):
-        if not change:  # Yeni kayıt ise
-            obj.created_by = request.user
-        super().save_model(request, obj, form, change)
+# Event admin geçici olarak devre dışı
+# @admin.register(Event)
+# class EventAdmin(admin.ModelAdmin):
+#     """Etkinlik admin paneli"""
+#     
+#     list_display = [
+#         'id', 'title', 'type', 'date', 'time', 'priority', 
+#         'location', 'created_by', 'created_at'
+#     ]
+#     
+#     list_filter = [
+#         'type', 'priority', 'date', 'recurring', 'created_at'
+#     ]
+#     
+#     search_fields = [
+#         'title', 'description', 'location', 'attendees'
+#     ]
+#     
+#     list_editable = [
+#         'type', 'priority'
+#     ]
+#     
+#     readonly_fields = [
+#         'created_at', 'updated_at'
+#     ]
+#     
+#     fieldsets = (
+#         ('Temel Bilgiler', {
+#             'fields': ('title', 'description', 'type', 'priority')
+#         }),
+#         ('Tarih ve Zaman', {
+#             'fields': ('date', 'time', 'duration')
+#         }),
+#         ('Konum ve Katılımcılar', {
+#             'fields': ('location', 'attendees')
+#         }),
+#         ('Tekrarlama', {
+#             'fields': ('recurring', 'recurrence'),
+#             'classes': ('collapse',)
+#         }),
+#         ('Hatırlatıcılar', {
+#             'fields': ('reminders',),
+#             'classes': ('collapse',)
+#         }),
+#         ('Sistem Bilgileri', {
+#             'fields': ('created_by', 'created_at', 'updated_at'),
+#             'classes': ('collapse',)
+#         }),
+#     )
+#     
+#     ordering = ['-created_at']
+#     
+#     def save_model(self, request, obj, form, change):
+#         if not change:  # Yeni kayıt ise
+#             obj.created_by = request.user
+#         super().save_model(request, obj, form, change)
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
@@ -138,7 +140,7 @@ class NotificationAdmin(admin.ModelAdmin):
     """Bildirim admin paneli"""
     
     list_display = [
-        'id', 'title', 'type', 'status', 'user', 'event', 
+        'id', 'title', 'type', 'status', 'user',
         'scheduled_time', 'sent_time', 'read_time', 'created_at'
     ]
     
@@ -163,7 +165,7 @@ class NotificationAdmin(admin.ModelAdmin):
             'fields': ('title', 'message', 'type', 'status')
         }),
         ('İlişkiler', {
-            'fields': ('user', 'event')
+            'fields': ('user',)
         }),
         ('Zamanlar', {
             'fields': ('scheduled_time', 'sent_time', 'read_time')
@@ -181,7 +183,7 @@ class NotificationAdmin(admin.ModelAdmin):
     ordering = ['-scheduled_time']
     
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('user', 'event')
+        return super().get_queryset(request).select_related('user')
     
     actions = ['mark_as_sent', 'mark_as_read', 'mark_as_dismissed']
     
@@ -212,3 +214,20 @@ class NotificationAdmin(admin.ModelAdmin):
         count = queryset.update(status='dismissed')
         self.message_user(request, f'{count} bildirim kapatıldı olarak işaretlendi.')
     mark_as_dismissed.short_description = "Seçili bildirimleri kapatıldı olarak işaretle"
+
+
+@admin.register(TransactionCategory)
+class TransactionCategoryAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name', 'parent', 'order']
+    list_filter = ['parent']
+    search_fields = ['name']
+    ordering = ['parent__id', 'order', 'name']
+
+
+@admin.register(Transaction)
+class TransactionAdmin(admin.ModelAdmin):
+    list_display = ['id', 'hareket_tipi', 'tarih', 'kasa_adi', 'nakit', 'kredi_karti', 'cari', 'toplam', 'kategori1', 'kategori2', 'kategori3', 'created_by']
+    list_filter = ['hareket_tipi', 'tarih', 'kategori1', 'kategori2', 'kategori3']
+    search_fields = ['aciklama', 'kasa_adi']
+    readonly_fields = ['created_at', 'updated_at']
+    ordering = ['-tarih', '-id']

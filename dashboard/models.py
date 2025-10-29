@@ -170,102 +170,104 @@ class Siparis(models.Model):
         }
         return colors.get(self.sms_durum, 'secondary')
 
-class Event(models.Model):
-    """Takvim etkinlikleri modeli"""
-    
-    TYPE_CHOICES = [
-        ('event', 'Etkinlik'),
-        ('meeting', 'Toplantı'),
-        ('task', 'Görev'),
-        ('reminder', 'Hatırlatıcı'),
-        ('deadline', 'Son Tarih'),
-    ]
-    
-    PRIORITY_CHOICES = [
-        ('low', 'Düşük'),
-        ('medium', 'Orta'),
-        ('high', 'Yüksek'),
-    ]
-    
-    RECURRENCE_CHOICES = [
-        ('none', 'Tekrarlanmaz'),
-        ('daily', 'Günlük'),
-        ('weekly', 'Haftalık'),
-        ('biweekly', '2 Haftada Bir'),
-        ('monthly', 'Aylık'),
-        ('yearly', 'Yıllık'),
-    ]
-    
-    # Temel Bilgiler
-    title = models.CharField(max_length=200, verbose_name="Başlık")
-    description = models.TextField(blank=True, null=True, verbose_name="Açıklama")
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='event', verbose_name="Tür")
-    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', verbose_name="Öncelik")
-    
-    # Tarih ve Zaman
-    date = models.DateField(verbose_name="Tarih")
-    time = models.TimeField(verbose_name="Başlangıç Saati")
-    duration = models.PositiveIntegerField(default=60, verbose_name="Süre (dakika)")
-    
-    # Konum ve Katılımcılar
-    location = models.CharField(max_length=300, blank=True, null=True, verbose_name="Konum")
-    attendees = models.TextField(blank=True, null=True, verbose_name="Katılımcılar")
-    
-    # Tekrarlama
-    recurring = models.BooleanField(default=False, verbose_name="Tekrarlanan")
-    recurrence = models.CharField(max_length=20, choices=RECURRENCE_CHOICES, default='none', verbose_name="Tekrar Deseni")
-    
-    # Hatırlatıcılar (JSON formatında)
-    reminders = models.TextField(blank=True, null=True, verbose_name="Hatırlatıcılar")
-    
-    # Oluşturan kullanıcı
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Oluşturan")
-    
-    # Zaman Damgaları
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Oluşturulma Tarihi")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Güncellenme Tarihi")
-    
-    class Meta:
-        verbose_name = "Etkinlik"
-        verbose_name_plural = "Etkinlikler"
-        ordering = ['date', 'time']
-    
-    def __str__(self):
-        return f"{self.title} - {self.date} {self.time}"
-    
-    def get_type_color(self):
-        """Etkinlik türü için renk döndür"""
-        colors = {
-            'event': '#3b82f6',
-            'meeting': '#10b981',
-            'task': '#f59e0b',
-            'reminder': '#8b5cf6',
-            'deadline': '#ef4444'
-        }
-        return colors.get(self.type, '#6b7280')
-    
-    def get_priority_color(self):
-        """Öncelik için renk döndür"""
-        colors = {
-            'low': '#10b981',
-            'medium': '#f59e0b',
-            'high': '#ef4444'
-        }
-        return colors.get(self.priority, '#6b7280')
-    
-    def get_duration_display(self):
-        """Süreyi okunabilir formatta döndür"""
-        if self.duration == 480:
-            return 'Tüm gün'
-        hours = self.duration // 60
-        minutes = self.duration % 60
-        
-        if hours == 0:
-            return f'{minutes} dakika'
-        elif minutes == 0:
-            return f'{hours} saat'
-        else:
-            return f'{hours}s {minutes}d'
+# Geçici olarak devre dışı - pytz sorunu
+# Geçici olarak devre dışı - pytz sorunu
+# class Event(models.Model):
+#     """Takvim etkinlikleri modeli"""
+#     
+#     TYPE_CHOICES = [
+#         ('event', 'Etkinlik'),
+#         ('meeting', 'Toplantı'),
+#         ('task', 'Görev'),
+#         ('reminder', 'Hatırlatıcı'),
+#         ('deadline', 'Son Tarih'),
+#     ]
+#     
+#     PRIORITY_CHOICES = [
+#         ('low', 'Düşük'),
+#         ('medium', 'Orta'),
+#         ('high', 'Yüksek'),
+#     ]
+#     
+#     RECURRENCE_CHOICES = [
+#         ('none', 'Tekrarlanmaz'),
+#         ('daily', 'Günlük'),
+#         ('weekly', 'Haftalık'),
+#         ('biweekly', '2 Haftada Bir'),
+#         ('monthly', 'Aylık'),
+#         ('yearly', 'Yıllık'),
+#     ]
+#     
+#     # Temel Bilgiler
+#     title = models.CharField(max_length=200, verbose_name="Başlık")
+#     description = models.TextField(blank=True, null=True, verbose_name="Açıklama")
+#     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='event', verbose_name="Tür")
+#     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', verbose_name="Öncelik")
+#     
+#     # Tarih ve Zaman
+#     date = models.DateField(verbose_name="Tarih")
+#     time = models.TimeField(verbose_name="Başlangıç Saati")
+#     duration = models.PositiveIntegerField(default=60, verbose_name="Süre (dakika)")
+#     
+#     # Konum ve Katılımcılar
+#     location = models.CharField(max_length=300, blank=True, null=True, verbose_name="Konum")
+#     attendees = models.TextField(blank=True, null=True, verbose_name="Katılımcılar")
+#     
+#     # Tekrarlama
+#     recurring = models.BooleanField(default=False, verbose_name="Tekrarlanan")
+#     recurrence = models.CharField(max_length=20, choices=RECURRENCE_CHOICES, default='none', verbose_name="Tekrar Deseni")
+#     
+#     # Hatırlatıcılar (JSON formatında)
+#     reminders = models.TextField(blank=True, null=True, verbose_name="Hatırlatıcılar")
+#     
+#     # Oluşturan kullanıcı
+#     created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Oluşturan")
+#     
+#     # Zaman Damgaları
+#     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Oluşturulma Tarihi")
+#     updated_at = models.DateTimeField(auto_now=True, verbose_name="Güncellenme Tarihi")
+#     
+#     class Meta:
+#         verbose_name = "Etkinlik"
+#         verbose_name_plural = "Etkinlikler"
+#         ordering = ['date', 'time']
+#     
+#     def __str__(self):
+#         return f"{self.title} - {self.date} {self.time}"
+#     
+#     def get_type_color(self):
+#         """Etkinlik türü için renk döndür"""
+#         colors = {
+#             'event': '#3b82f6',
+#             'meeting': '#10b981',
+#             'task': '#f59e0b',
+#             'reminder': '#8b5cf6',
+#             'deadline': '#ef4444'
+#         }
+#         return colors.get(self.type, '#6b7280')
+#     
+#     def get_priority_color(self):
+#         """Öncelik için renk döndür"""
+#         colors = {
+#             'low': '#10b981',
+#             'medium': '#f59e0b',
+#             'high': '#ef4444'
+#         }
+#         return colors.get(self.priority, '#6b7280')
+#     
+#     def get_duration_display(self):
+#         """Süreyi okunabilir formatta döndür"""
+#         if self.duration == 480:
+#             return 'Tüm gün'
+#         hours = self.duration // 60
+#         minutes = self.duration % 60
+#         
+#         if hours == 0:
+#             return f'{minutes} dakika'
+#         elif minutes == 0:
+#             return f'{hours} saat'
+#         else:
+#             return f'{hours}s {minutes}d'
 
 class Notification(models.Model):
     """Bildirim modeli - Etkinlik hatırlatıcıları ve sistem bildirimleri"""
@@ -292,8 +294,8 @@ class Notification(models.Model):
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='info', verbose_name="Tür")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="Durum")
     
-    # İlişkili Etkinlik (opsiyonel)
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, blank=True, null=True, verbose_name="İlişkili Etkinlik")
+    # İlişkili Etkinlik (opsiyonel) - Geçici olarak devre dışı
+    # event = models.ForeignKey(Event, on_delete=models.CASCADE, blank=True, null=True, verbose_name="İlişkili Etkinlik")
     
     # Hedef Kullanıcı
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Kullanıcı")
@@ -372,3 +374,73 @@ class Notification(models.Model):
     def set_extra_data(self, data_dict):
         """Ek verileri dict'ten JSON'a çevir"""
         self.extra_data = json.dumps(data_dict) if data_dict else None
+
+
+class TransactionCategory(models.Model):
+    """Gelir/Gider kategori modeli (çok seviyeli hiyerarşi destekler)"""
+    name = models.CharField(max_length=100, verbose_name="Kategori Adı")
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='children', verbose_name="Üst Kategori")
+    order = models.PositiveIntegerField(default=0, verbose_name="Sıra")
+    
+    # Kullanıcı ve zaman bilgileri
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Oluşturan")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Oluşturulma Tarihi")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Güncellenme Tarihi")
+
+    class Meta:
+        verbose_name = "Kategori"
+        verbose_name_plural = "Kategoriler"
+        ordering = ['parent__id', 'order', 'name']
+
+    def __str__(self):
+        if self.parent:
+            return f"{self.parent} / {self.name}"
+        return self.name
+    
+    def get_created_by_display(self):
+        """Oluşturan kullanıcının adını döndür"""
+        if self.created_by:
+            return self.created_by.get_full_name() or self.created_by.username
+        return "Sistem"
+
+
+class Transaction(models.Model):
+    """Gelir/Gider işlemleri"""
+    TYPE_CHOICES = [
+        ('gelir', 'Gelir'),
+        ('gider', 'Gider'),
+    ]
+    KASA_CHOICES = [
+        ('merkez-satis', 'Merkez Satış'),
+        ('servis', 'Servis'),
+    ]
+
+    hareket_tipi = models.CharField(max_length=10, choices=TYPE_CHOICES, default='gelir', verbose_name="Hareket Tipi")
+    tarih = models.DateField(default=timezone.now, verbose_name="Tarih")
+
+    kasa_adi = models.CharField(max_length=20, choices=KASA_CHOICES, default='merkez-satis', verbose_name="Kasa Adı")
+    nakit = models.DecimalField(max_digits=12, decimal_places=2, default=0, validators=[MinValueValidator(0)], verbose_name="Nakit")
+    kredi_karti = models.DecimalField(max_digits=12, decimal_places=2, default=0, validators=[MinValueValidator(0)], verbose_name="Kredi Kartı")
+    cari = models.DecimalField(max_digits=12, decimal_places=2, default=0, validators=[MinValueValidator(0)], verbose_name="Cari")
+    mehmet_havale = models.DecimalField(max_digits=12, decimal_places=2, default=0, validators=[MinValueValidator(0)], verbose_name="Mehmet Havale")
+    aciklama = models.CharField(max_length=255, blank=True, null=True, verbose_name="Açıklama")
+
+    kategori1 = models.ForeignKey(TransactionCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='level1_transactions', verbose_name="1. Kategori")
+    kategori2 = models.ForeignKey(TransactionCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='level2_transactions', verbose_name="2. Kategori")
+    kategori3 = models.ForeignKey(TransactionCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='level3_transactions', verbose_name="3. Kategori")
+
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Oluşturan")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Oluşturulma Tarihi")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Güncellenme Tarihi")
+
+    class Meta:
+        verbose_name = "İşlem"
+        verbose_name_plural = "İşlemler"
+        ordering = ['-tarih', '-id']
+
+    def __str__(self):
+        return f"{self.get_hareket_tipi_display()} - {self.tarih}"
+
+    @property
+    def toplam(self):
+        return (self.nakit or 0) + (self.kredi_karti or 0) + (self.cari or 0) + (self.mehmet_havale or 0)

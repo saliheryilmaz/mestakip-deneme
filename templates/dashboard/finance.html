@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gelir/Gider İşlemleri - Mestakip{% endblock %}
+{% block page_name %}finance{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Gelir/Gider İşlemleri</h1>
+        <p class="text-muted mb-0">İşlem bilgileri ve kategori seçimi</p>
+    </div>
+</div>
+
+{% if form.errors %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <h5 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Form Hataları</h5>
+    {% for field, errors in form.errors.items %}
+        {% for error in errors %}
+            <p class="mb-1"><strong>{{ field }}:</strong> {{ error }}</p>
+        {% endfor %}
+    {% endfor %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+{% if form.non_field_errors %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <h5 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Hata</h5>
+    {% for error in form.non_field_errors %}
+        <p class="mb-1">{{ error }}</p>
+    {% endfor %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<form method="post" class="row g-4" id="financeForm">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{% url 'dashboard:products' %}">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">İşlem Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Hareket Tipi</label>
+                        {{ form.hareket_tipi }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Tarih</label>
+                        {{ form.tarih }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Kasa Adı</label>
+                        {{ form.kasa_adi }}
+                    </div>
+
+                    <div class="col-12 mb-3">
+                        <div id="payment-info" class="alert alert-info d-none">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <span id="payment-info-text">Ödeme türü seçildi</span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">💰 Nakit</label>
+                        {{ form.nakit }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">💳 Kredi Kartı</label>
+                        {{ form.kredi_karti }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">🏢 Cari</label>
+                        {{ form.cari }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">🏦 Mehmet Havale</label>
+                        {{ form.mehmet_havale }}
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Açıklama</label>
+                        {{ form.aciklama }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    Kategori 
+                    <span class="badge bg-info ms-2">{{ ana_kategoriler.count }} ana kategori</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Ana Kategori Seçin (Opsiyonel)</label>
+                        <select class="form-select" name="ana_kategori" id="ana-kategori-select">
+                            <option value="">Ana Kategori Seçiniz</option>
+                            <option value="3">Diğer Gelirler</option>
+                            <option value="6">Genel Giderler</option>
+                            <option value="2">Hizmet Gelirleri</option>
+                            <option value="4">Operasyonel Giderler</option>
+                            <option value="5">Personel Giderleri</option>
+                            <option value="1">Satış Gelirleri</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Alt Kategori Seçin (Opsiyonel)</label>
+                        <select class="form-select" name="kategori1" id="alt-kategori-select" disabled>
+                            <option value="">Önce ana kategori seçin</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 d-flex justify-content-end">
+        <button type="submit" class="btn btn-primary">Kaydet ve Products'a Dön</button>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Ödeme alanları
+    const paymentFields = {
+        'nakit': document.querySelector('input[name="nakit"]'),
+        'kredi_karti': document.querySelector('input[name="kredi_karti"]'),
+        'cari': document.querySelector('input[name="cari"]'),
+        'mehmet_havale': document.querySelector('input[name="mehmet_havale"]')
+    };
+
+    // Ödeme türü isimleri
+    const paymentNames = {
+        'nakit': '💰 Nakit',
+        'kredi_karti': '💳 Kredi Kartı',
+        'cari': '🏢 Cari',
+        'mehmet_havale': '🏦 Mehmet Havale'
+    };
+
+    // Bilgi kutusu elementleri
+    const paymentInfo = document.getElementById('payment-info');
+    const paymentInfoText = document.getElementById('payment-info-text');
+
+    // Her ödeme alanı için CSS sınıfı ekle ve required özelliğini kaldır
+    Object.keys(paymentFields).forEach(fieldName => {
+        const field = paymentFields[fieldName];
+        if (field) {
+            field.classList.add('payment-field');
+            // HTML5 validasyonunu kaldır
+            field.removeAttribute('required');
+        }
+    });
+
+    // Her ödeme alanı için event listener ekle
+    Object.keys(paymentFields).forEach(fieldName => {
+        const field = paymentFields[fieldName];
+        if (field) {
+            field.addEventListener('input', function() {
+                const value = parseFloat(this.value) || 0;
+                
+                // Eğer bu alana bir değer girilmişse (0'dan büyük), diğer alanları 0 yap
+                if (value > 0) {
+                    Object.keys(paymentFields).forEach(otherFieldName => {
+                        if (otherFieldName !== fieldName) {
+                            const otherField = paymentFields[otherFieldName];
+                            if (otherField) {
+                                otherField.value = '0';
+                                otherField.classList.remove('selected');
+                                // Required özelliğini kaldır
+                                otherField.removeAttribute('required');
+                            }
+                        }
+                    });
+                    
+                    // Girilen alanı vurgula
+                    this.classList.add('selected');
+                    // Bu alanın required özelliğini kaldır
+                    this.removeAttribute('required');
+                    
+                    // Bilgi kutusunu göster
+                    if (paymentInfo && paymentInfoText) {
+                        paymentInfo.classList.remove('d-none');
+                        paymentInfo.classList.add('alert-success');
+                        paymentInfo.classList.remove('alert-info');
+                        paymentInfoText.textContent = `${paymentNames[fieldName]} seçildi - Miktar: ${value} TL`;
+                    }
+                } else {
+                    // Eğer alan boşaltılmışsa veya 0 ise, vurguyu kaldır
+                    this.classList.remove('selected');
+                    
+                    // Bilgi kutusunu gizle
+                    if (paymentInfo) {
+                        paymentInfo.classList.add('d-none');
+                        paymentInfo.classList.remove('alert-success');
+                        paymentInfo.classList.add('alert-info');
+                    }
+                }
+            });
+
+            // Focus olduğunda hafif vurgu
+            field.addEventListener('focus', function() {
+                if (!this.value.trim() || this.value.trim() === '0') {
+                    this.classList.add('focused');
+                }
+            });
+
+            field.addEventListener('blur', function() {
+                // Focus kaybedildiğinde focused sınıfını kaldır
+                this.classList.remove('focused');
+            });
+        }
+    });
+
+    // Form submit edilmeden önce kontrol
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const filledFields = [];
+            const filledFieldNames = [];
+            
+            Object.keys(paymentFields).forEach(fieldName => {
+                const field = paymentFields[fieldName];
+                if (field) {
+                    const value = parseFloat(field.value) || 0;
+                    if (value > 0) {
+                        filledFields.push(value);
+                        filledFieldNames.push(paymentNames[fieldName]);
+                    }
+                }
+            });
+
+            // En az bir ödeme alanı dolu olmalı
+            if (filledFields.length === 0) {
+                e.preventDefault();
+                alert('Lütfen en az bir ödeme alanını doldurun (Nakit, Kredi Kartı, Cari veya Mehmet Havale)');
+                return false;
+            }
+
+            // Sadece bir ödeme türü seçilmeli
+            if (filledFields.length > 1) {
+                e.preventDefault();
+                alert('Lütfen sadece bir ödeme türü seçin. Birden fazla alan doldurulmuş: ' + filledFieldNames.join(', '));
+                return false;
+            }
+            
+            // Her şey yolunda, formu gönder
+            return true;
+        });
+    }
+
+    // Kategori seçimi JavaScript'i
+    const anaKategoriSelect = document.getElementById('ana-kategori-select');
+    const altKategoriSelect = document.getElementById('alt-kategori-select');
+
+    if (anaKategoriSelect && altKategoriSelect) {
+        anaKategoriSelect.addEventListener('change', function() {
+            const anaKategoriId = this.value;
+            
+            // Alt kategori dropdown'ını temizle
+            altKategoriSelect.innerHTML = '<option value="">Alt kategori seçiniz</option>';
+            
+            if (anaKategoriId) {
+                // AJAX ile alt kategorileri getir
+                fetch(`/dashboard/api/alt-kategoriler/${anaKategoriId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(altKategori => {
+                            const option = document.createElement('option');
+                            option.value = altKategori.id;
+                            option.textContent = altKategori.name;
+                            altKategoriSelect.appendChild(option);
+                        });
+                        altKategoriSelect.disabled = false;
+                    })
+                    .catch(error => {
+                        console.error('Alt kategoriler yüklenirken hata:', error);
+                        altKategoriSelect.disabled = true;
+                    });
+            } else {
+                altKategoriSelect.disabled = true;
+                altKategoriSelect.innerHTML = '<option value="">Önce ana kategori seçin</option>';
+            }
+        });
+    }
+});
+</script>
+
+{% endblock %}
+
