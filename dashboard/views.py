@@ -264,6 +264,25 @@ def products(request):
     gun_ozeti['gider'] = gun_ozeti['gider'] or 0
     gun_ozeti['net'] = gun_ozeti['gelir'] - gun_ozeti['gider']
     gun_ozeti['islem_sayisi'] = qs.count()
+    
+    # Ödeme yöntemlerine göre toplamlar (gelir - gider)
+    # Gelir toplamları
+    gelir_nakit = qs.filter(hareket_tipi='gelir').aggregate(total=Sum('nakit', default=0))['total'] or 0
+    gelir_kredi_karti = qs.filter(hareket_tipi='gelir').aggregate(total=Sum('kredi_karti', default=0))['total'] or 0
+    gelir_cari = qs.filter(hareket_tipi='gelir').aggregate(total=Sum('cari', default=0))['total'] or 0
+    gelir_mehmet_havale = qs.filter(hareket_tipi='gelir').aggregate(total=Sum('mehmet_havale', default=0))['total'] or 0
+    
+    # Gider toplamları
+    gider_nakit = qs.filter(hareket_tipi='gider').aggregate(total=Sum('nakit', default=0))['total'] or 0
+    gider_kredi_karti = qs.filter(hareket_tipi='gider').aggregate(total=Sum('kredi_karti', default=0))['total'] or 0
+    gider_cari = qs.filter(hareket_tipi='gider').aggregate(total=Sum('cari', default=0))['total'] or 0
+    gider_mehmet_havale = qs.filter(hareket_tipi='gider').aggregate(total=Sum('mehmet_havale', default=0))['total'] or 0
+    
+    # Net toplamlar (gelir - gider)
+    gun_ozeti['nakit_toplam'] = gelir_nakit - gider_nakit
+    gun_ozeti['kredi_karti_toplam'] = gelir_kredi_karti - gider_kredi_karti
+    gun_ozeti['cari_toplam'] = gelir_cari - gider_cari
+    gun_ozeti['mehmet_havale_toplam'] = gelir_mehmet_havale - gider_mehmet_havale
 
     # Excel verileri için tarih filtrelemesi
     hareketler = MalzemeHareketi.objects.filter(kullanici=request.user).order_by('-tarih')
@@ -322,6 +341,66 @@ def products(request):
         # Tarih aralığı seçilmişse, tüm filtrelenmiş dosyaları göster
         secilen_gun_excel = list(dosyalar)
     
+    # Excel verilerine göre ödeme şekillerine göre toplamlar
+    excel_odeme_toplamlari = {}
+    
+    # Tüm filtrelenmiş Excel satırlarını al
+    excel_satirlar = MalzemeHareketi.objects.filter(kullanici=request.user)
+    if baslangic_tarih:
+        excel_satirlar = excel_satirlar.filter(tarih__gte=baslangic_tarih)
+    if bitis_tarih:
+        excel_satirlar = excel_satirlar.filter(tarih__lte=bitis_tarih)
+    if secilen_tarih and not baslangic_tarih and not bitis_tarih:
+        excel_satirlar = excel_satirlar.filter(tarih=secilen_tarih)
+    
+    # Ödeme şekillerine göre grupla ve topla
+    excel_odeme_dict = {
+        'Nakit': 0,
+        'Kredi_Karti': 0,
+        'Cari': 0,
+        'Sanal_Pos': 0
+    }
+    
+    for satir in excel_satirlar:
+        odeme_sekli = satir.odeme_sekli or 'Belirtilmemiş'
+        # Ödeme şeklini normalize et (küçük harfe çevir, boşlukları temizle)
+        odeme_sekli_normalized = odeme_sekli.lower().strip().replace(' ', '').replace('.', '').replace('-', '')
+        odeme_sekli_original = odeme_sekli.strip()
+        
+        # Ana ödeme şekillerini belirle (tam eşleşme ve içerme kontrolü)
+        # Nakit kontrolü
+        if (odeme_sekli_original.lower() == 'nakit' or 
+            'nakit' in odeme_sekli_normalized or 
+            odeme_sekli_normalized == 'nakit'):
+            excel_odeme_dict['Nakit'] += float(satir.tutar)
+        # Kredi Kartı kontrolü
+        elif ('kart' in odeme_sekli_normalized or 
+              'kredi' in odeme_sekli_normalized or 
+              'kredit' in odeme_sekli_normalized or
+              odeme_sekli_original.lower() in ['kredi kartı', 'kredi karti', 'kart', 'credit card']):
+            excel_odeme_dict['Kredi_Karti'] += float(satir.tutar)
+        # Sanal Pos kontrolü
+        elif ('sanal' in odeme_sekli_normalized or 
+              'pos' in odeme_sekli_normalized or
+              'sanalpos' in odeme_sekli_normalized or
+              'sanal pos' in odeme_sekli_original.lower() or
+              'havale' in odeme_sekli_normalized or 
+              'mehmet' in odeme_sekli_normalized or
+              'mhavale' in odeme_sekli_normalized or
+              odeme_sekli_original.lower() in ['sanal pos', 'sanalpos', 'pos', 'm.havale', 'm havale', 'mhavale', 'mehmet havale']):
+            excel_odeme_dict['Sanal_Pos'] += float(satir.tutar)
+        # Cari kontrolü
+        elif ('cari' in odeme_sekli_normalized or 
+              odeme_sekli_original.lower() == 'cari' or
+              odeme_sekli_normalized == 'cari'):
+            excel_odeme_dict['Cari'] += float(satir.tutar)
+        else:
+            # Eğer eşleşme yoksa, varsayılan olarak hiçbir şeye eklenmez
+            pass
+    
+    # Dictionary'yi context'e gönder
+    excel_odeme_toplamlari = excel_odeme_dict
+    
     context = {
         'page_title': 'Products',
         'secilen_tarih': secilen_tarih or date.today().strftime('%Y-%m-%d'),
@@ -338,6 +417,7 @@ def products(request):
         'debug_secilen_tarih_str': secilen_tarih_str,
         'debug_gunluk_excel_keys': list(gunluk_excel_sorted.keys()),
         'debug_toplam_dosya': len(dosyalar),
+        'excel_odeme_toplamlari': excel_odeme_toplamlari,
     }
     return render(request, 'dashboard/products.html', context)
 
@@ -957,6 +1037,39 @@ def messages_view(request):
     mehmet_havale_net = float((mehmet_havale_field_toplam['mehmet_havale_gelir'] or 0) - (mehmet_havale_field_toplam['mehmet_havale_gider'] or 0))
     if mehmet_havale_toplam == 0:  # Eğer kasa olarak mehmet-havale yoksa field toplamını kullan
         mehmet_havale_toplam = mehmet_havale_net
+    
+    # Ödeme yöntemlerine göre toplamlar (Detaylı İşlemler'den)
+    # Gelir toplamları
+    gelir_nakit = qs.filter(hareket_tipi='gelir').aggregate(total=Sum('nakit', default=0))['total'] or 0
+    gelir_kredi_karti = qs.filter(hareket_tipi='gelir').aggregate(total=Sum('kredi_karti', default=0))['total'] or 0
+    gelir_cari = qs.filter(hareket_tipi='gelir').aggregate(total=Sum('cari', default=0))['total'] or 0
+    gelir_mehmet_havale = qs.filter(hareket_tipi='gelir').aggregate(total=Sum('mehmet_havale', default=0))['total'] or 0
+    
+    # Gider toplamları
+    gider_nakit = qs.filter(hareket_tipi='gider').aggregate(total=Sum('nakit', default=0))['total'] or 0
+    gider_kredi_karti = qs.filter(hareket_tipi='gider').aggregate(total=Sum('kredi_karti', default=0))['total'] or 0
+    gider_cari = qs.filter(hareket_tipi='gider').aggregate(total=Sum('cari', default=0))['total'] or 0
+    gider_mehmet_havale = qs.filter(hareket_tipi='gider').aggregate(total=Sum('mehmet_havale', default=0))['total'] or 0
+    
+    # Net toplamlar (gelir - gider)
+    nakit_net = float(gelir_nakit - gider_nakit)
+    kredi_karti_net = float(gelir_kredi_karti - gider_kredi_karti)
+    cari_net = float(gelir_cari - gider_cari)
+    mehmet_havale_field_net = float(gelir_mehmet_havale - gider_mehmet_havale)
+    
+    # Nakit → Çanta'ya ekle
+    canta_toplam += nakit_net
+    
+    # Kredi Kartı ve Cari için kasa adına göre dağıt (zaten çalışıyor)
+    # Mehmet Havale için hem kasa hem field toplamını kontrol et
+    if mehmet_havale_toplam == 0:
+        mehmet_havale_toplam = mehmet_havale_field_net
+    else:
+        # Hem kasa hem field varsa, field toplamını ekle
+        mehmet_havale_toplam += mehmet_havale_field_net
+    
+    # Genel toplamı güncelle (tüm kasaların toplamı)
+    genel_toplam = sum([servis_toplam, merkez_satis_toplam, canta_toplam, mehmet_havale_toplam])
 
     context = {
         'page_title': 'Gelir/Gider Toplamları',
@@ -966,6 +1079,13 @@ def messages_view(request):
         'mehmet_havale_toplam': mehmet_havale_toplam,
         'genel_toplam': genel_toplam,
         'kasa_satirlari': rows,
+        # Ödeme yöntemleri toplamları (debug/ekstra bilgi için)
+        'odeme_toplamlari': {
+            'nakit': nakit_net,
+            'kredi_karti': kredi_karti_net,
+            'cari': cari_net,
+            'mehmet_havale': mehmet_havale_field_net,
+        },
     }
     return render(request, 'dashboard/messages.html', context)
 

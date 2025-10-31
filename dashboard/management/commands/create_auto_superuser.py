@@ -3,6 +3,7 @@ Auto-create superuser if none exists
 """
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
+from dashboard.models import UserProfile
 import os
 
 User = get_user_model()
@@ -20,14 +21,21 @@ class Command(BaseCommand):
                 password = os.environ.get('ADMIN_PASSWORD', 'admin12345')
                 
                 if not User.objects.filter(username=username).exists():
-                    User.objects.create_superuser(
+                    user = User.objects.create_superuser(
                         username=username,
                         email=email,
                         password=password
                     )
+                    
+                    # UserProfile oluştur ve role='admin' ver
+                    UserProfile.objects.get_or_create(
+                        user=user,
+                        defaults={'role': 'admin'}
+                    )
+                    
                     self.stdout.write(
                         self.style.SUCCESS(
-                            f'✅ Superuser "{username}" otomatik oluşturuldu!'
+                            f'✅ Superuser "{username}" otomatik oluşturuldu! (Role: admin)'
                         )
                     )
                     self.stdout.write(
@@ -36,12 +44,50 @@ class Command(BaseCommand):
                         )
                     )
                 else:
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f'⚠️  Superuser "{username}" zaten var'
-                        )
+                    # Kullanıcı var ama profil yoksa oluştur
+                    user = User.objects.get(username=username)
+                    profile, created = UserProfile.objects.get_or_create(
+                        user=user,
+                        defaults={'role': 'admin'}
                     )
+                    if not created and profile.role != 'admin':
+                        # Profil var ama role admin değilse güncelle
+                        profile.role = 'admin'
+                        profile.save()
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f'✅ User "{username}" profili admin rolüne güncellendi!'
+                            )
+                        )
+                    else:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f'⚠️  Superuser "{username}" zaten var'
+                            )
+                        )
             else:
+                # Superuser var ama profil kontrolü yap
+                admin_users = User.objects.filter(is_superuser=True)
+                for user in admin_users:
+                    profile, created = UserProfile.objects.get_or_create(
+                        user=user,
+                        defaults={'role': 'admin'}
+                    )
+                    if created:
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f'✅ User "{user.username}" için admin profili oluşturuldu!'
+                            )
+                        )
+                    elif profile.role != 'admin':
+                        profile.role = 'admin'
+                        profile.save()
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f'✅ User "{user.username}" profili admin rolüne güncellendi!'
+                            )
+                        )
+                
                 self.stdout.write(
                     self.style.SUCCESS(
                         '✅ Superuser zaten mevcut'
