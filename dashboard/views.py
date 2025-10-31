@@ -7,13 +7,16 @@ from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count, F, Case, When, DecimalField
 from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import json
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from .models import Siparis, UserProfile, Notification, Transaction, TransactionCategory
-# Event geçici olarak devre dışı
-from .forms import SiparisForm, TransactionForm
+from .models import Siparis, UserProfile, Notification, Transaction, TransactionCategory, Event, MalzemeHareketi, MalzemeDosya
+from .forms import SiparisForm, TransactionForm, MalzemeExcelUploadForm
+import pandas as pd
+from collections import defaultdict
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.dateparse import parse_date
 
 @login_required
 def index(request):
@@ -225,45 +228,116 @@ def users(request):
 
 @login_required
 def products(request):
-    """Products sayfası: günlük rapor (gelir/gider/net) ve finans sayfasına geçiş"""
-    start = request.GET.get('baslangic')
-    end = request.GET.get('bitis')
-
+    """Products sayfası: tarih aralığı filtresi ile işlemleri göster"""
+    from datetime import date
+    
+    # Tarih aralığı parametrelerini al
+    baslangic_tarih = request.GET.get('baslangic_tarih')
+    bitis_tarih = request.GET.get('bitis_tarih')
+    
+    # Eski tek tarih parametresi (geriye uyumluluk için)
+    secilen_tarih = request.GET.get('tarih')
+    if not secilen_tarih and not baslangic_tarih and not bitis_tarih:
+        secilen_tarih = date.today().strftime('%Y-%m-%d')
+    
+    # İşlemleri filtrele
     qs = Transaction.objects.filter(created_by=request.user)
-    if start:
-        qs = qs.filter(tarih__gte=start)
-    if end:
-        qs = qs.filter(tarih__lte=end)
-
+    
+    if baslangic_tarih:
+        qs = qs.filter(tarih__gte=baslangic_tarih)
+    if bitis_tarih:
+        qs = qs.filter(tarih__lte=bitis_tarih)
+    if secilen_tarih and not baslangic_tarih and not bitis_tarih:
+        qs = qs.filter(tarih=secilen_tarih)
+    
+    qs = qs.order_by('-created_at')
+    
+    # Özet bilgileri
     toplam_ifade = (F('nakit') + F('kredi_karti') + F('cari') + F('mehmet_havale'))
-
-    gunluk_rapor = (
-        qs.values('tarih')
-        .annotate(
-            gelir=Sum(Case(When(hareket_tipi='gelir', then=toplam_ifade), default=0, output_field=DecimalField(max_digits=12, decimal_places=2))),
-            gider=Sum(Case(When(hareket_tipi='gider', then=toplam_ifade), default=0, output_field=DecimalField(max_digits=12, decimal_places=2)))
-        )
-        .annotate(net=F('gelir') - F('gider'))
-        .order_by('-tarih')
+    
+    gun_ozeti = qs.aggregate(
+        gelir=Sum(Case(When(hareket_tipi='gelir', then=toplam_ifade), default=0, output_field=DecimalField(max_digits=12, decimal_places=2))),
+        gider=Sum(Case(When(hareket_tipi='gider', then=toplam_ifade), default=0, output_field=DecimalField(max_digits=12, decimal_places=2)))
     )
+    
+    gun_ozeti['gelir'] = gun_ozeti['gelir'] or 0
+    gun_ozeti['gider'] = gun_ozeti['gider'] or 0
+    gun_ozeti['net'] = gun_ozeti['gelir'] - gun_ozeti['gider']
+    gun_ozeti['islem_sayisi'] = qs.count()
 
-    genel_toplam = {
-        'gelir': gunluk_rapor.aggregate(s=Sum('gelir'))['s'] or 0,
-        'gider': gunluk_rapor.aggregate(s=Sum('gider'))['s'] or 0,
-    }
-    genel_toplam['net'] = (genel_toplam['gelir'] - genel_toplam['gider']) if genel_toplam else 0
-
-    last_transactions = Transaction.objects.filter(created_by=request.user).order_by('-tarih', '-id')[:10]
-
+    # Excel verileri için tarih filtrelemesi
+    hareketler = MalzemeHareketi.objects.filter(kullanici=request.user).order_by('-tarih')
+    dosyalar = MalzemeDosya.objects.filter(kullanici=request.user).prefetch_related('satirlar').order_by('-yukleme_tarihi')
+    
+    # Tarih aralığı filtresi uygula
+    if baslangic_tarih:
+        hareketler = hareketler.filter(tarih__gte=baslangic_tarih)
+        dosyalar = dosyalar.filter(yukleme_tarihi__date__gte=baslangic_tarih)
+    if bitis_tarih:
+        hareketler = hareketler.filter(tarih__lte=bitis_tarih)
+        dosyalar = dosyalar.filter(yukleme_tarihi__date__lte=bitis_tarih)
+    
+    # Eski parametreler (geriye uyumluluk)
+    start_s = request.GET.get('start-date')
+    end_s = request.GET.get('end-date')
+    if start_s and not baslangic_tarih:
+        hareketler = hareketler.filter(tarih__gte=start_s)
+        dosyalar = dosyalar.filter(yukleme_tarihi__date__gte=start_s)
+    if end_s and not bitis_tarih:
+        hareketler = hareketler.filter(tarih__lte=end_s)
+        dosyalar = dosyalar.filter(yukleme_tarihi__date__lte=end_s)
+    from collections import defaultdict
+    import datetime
+    gunluk = defaultdict(list)
+    for h in hareketler:
+        tarih_str = h.tarih.strftime('%d.%m.%Y')
+        gunluk[tarih_str].append(h)
+    gunluk_excel = defaultdict(list)
+    for d in dosyalar:
+        # Dosyayı hem yükleme tarihine hem de içindeki kayıtların tarihlerine göre gruplandır
+        yukleme_tarihi_str = d.yukleme_tarihi.strftime('%d.%m.%Y')
+        gunluk_excel[yukleme_tarihi_str].append(d)
+        
+        # Ayrıca dosya içindeki kayıtların tarihlerine göre de gruplandır
+        for satir in d.satirlar.all():
+            satir_tarih_str = satir.tarih.strftime('%d.%m.%Y')
+            if satir_tarih_str != yukleme_tarihi_str:
+                # Eğer kayıt tarihi farklıysa, o tarihe de ekle
+                if d not in gunluk_excel[satir_tarih_str]:
+                    gunluk_excel[satir_tarih_str].append(d)
+    gunluk_sorted = dict(sorted(gunluk.items(), key=lambda x: datetime.datetime.strptime(x[0], '%d.%m.%Y'), reverse=True))
+    gunluk_excel_sorted = dict(sorted(gunluk_excel.items(), key=lambda x: datetime.datetime.strptime(x[0], '%d.%m.%Y'), reverse=True))
+    
+    # Excel verilerini belirle
+    secilen_gun_excel = []
+    secilen_tarih_str = ''
+    
+    if secilen_tarih and not baslangic_tarih and not bitis_tarih:
+        # Tek tarih seçilmişse
+        from datetime import datetime as dt
+        secilen_tarih_obj = dt.strptime(secilen_tarih, '%Y-%m-%d')
+        secilen_tarih_str = secilen_tarih_obj.strftime('%d.%m.%Y')
+        secilen_gun_excel = gunluk_excel_sorted.get(secilen_tarih_str, [])
+    else:
+        # Tarih aralığı seçilmişse, tüm filtrelenmiş dosyaları göster
+        secilen_gun_excel = list(dosyalar)
+    
     context = {
         'page_title': 'Products',
-        'gunluk_rapor': gunluk_rapor,
-        'genel_toplam': genel_toplam,
-        'transactions': last_transactions,
-        'filters': {
-            'baslangic': start or '',
-            'bitis': end or '',
-        }
+        'secilen_tarih': secilen_tarih or date.today().strftime('%Y-%m-%d'),
+        'baslangic_tarih': baslangic_tarih,
+        'bitis_tarih': bitis_tarih,
+        'gun_ozeti': gun_ozeti,
+        'gunun_islemleri': qs,
+        'malzeme_gunluk': gunluk_sorted,
+        'gunluk_excel': gunluk_excel_sorted,
+        'secilen_gun_excel': secilen_gun_excel,
+        'start_selected': start_s or '',
+        'end_selected': end_s or '',
+        # Debug bilgileri
+        'debug_secilen_tarih_str': secilen_tarih_str,
+        'debug_gunluk_excel_keys': list(gunluk_excel_sorted.keys()),
+        'debug_toplam_dosya': len(dosyalar),
     }
     return render(request, 'dashboard/products.html', context)
 
@@ -853,22 +927,43 @@ def messages_view(request):
     # Kartlar için belirli kasalar
     servis_toplam = 0
     merkez_satis_toplam = 0
+    canta_toplam = 0
+    mehmet_havale_toplam = 0
     genel_toplam = 0
     rows = []
+    
     for row in kasa_ozet:
         kasa = row['kasa_adi']
         net = float(row['net'] or 0)
         rows.append({'kasa_adi': kasa, 'bakiye': net})
         genel_toplam += net
+        
         if kasa == 'servis':
             servis_toplam = net
-        if kasa == 'merkez-satis':
+        elif kasa == 'merkez-satis':
             merkez_satis_toplam = net
+        elif kasa == 'canta':
+            canta_toplam = net
+        elif kasa == 'mehmet-havale':
+            mehmet_havale_toplam = net
+
+    # Ayrıca mehmet_havale field'ından da toplam hesapla
+    mehmet_havale_field_toplam = qs.aggregate(
+        mehmet_havale_gelir=Sum(Case(When(hareket_tipi='gelir', then='mehmet_havale'), default=0, output_field=DecimalField(max_digits=14, decimal_places=2))),
+        mehmet_havale_gider=Sum(Case(When(hareket_tipi='gider', then='mehmet_havale'), default=0, output_field=DecimalField(max_digits=14, decimal_places=2)))
+    )
+    
+    # Mehmet havale field toplamını da ekle
+    mehmet_havale_net = float((mehmet_havale_field_toplam['mehmet_havale_gelir'] or 0) - (mehmet_havale_field_toplam['mehmet_havale_gider'] or 0))
+    if mehmet_havale_toplam == 0:  # Eğer kasa olarak mehmet-havale yoksa field toplamını kullan
+        mehmet_havale_toplam = mehmet_havale_net
 
     context = {
         'page_title': 'Gelir/Gider Toplamları',
         'servis_toplam': servis_toplam,
         'merkez_satis_toplam': merkez_satis_toplam,
+        'canta_toplam': canta_toplam,
+        'mehmet_havale_toplam': mehmet_havale_toplam,
         'genel_toplam': genel_toplam,
         'kasa_satirlari': rows,
     }
@@ -948,16 +1043,41 @@ def create_event(request):
             date_obj = datetime.strptime(data['date'], '%Y-%m-%d').date()
             time_obj = datetime.strptime(data['time'], '%H:%M').time()
             
-            # Geçici olarak basit response döndür
+            # Event oluştur ve veritabanına kaydet
+            event = Event.objects.create(
+                title=data.get('title', ''),
+                description=data.get('description', ''),
+                type=data.get('type', 'event'),
+                priority=data.get('priority', 'medium'),
+                date=date_obj,
+                time=time_obj,
+                duration=int(data.get('duration', 60)),
+                location=data.get('location', ''),
+                attendees=data.get('attendees', ''),
+                recurring=data.get('recurring', False),
+                recurrence=data.get('recurrence', 'none'),
+                reminders=json.dumps(data.get('reminders', ['15'])),
+                created_by=request.user
+            )
+            
+            # Bildirim oluştur
+            try:
+                create_event_notifications(event)
+            except Exception as e:
+                print(f"Bildirim oluşturma hatası: {e}")
+            
             return JsonResponse({
                 'success': True,
                 'message': 'Etkinlik başarıyla oluşturuldu!',
                 'event': {
-                    'title': data.get('title', ''),
-                    'date': data.get('date', ''),
-                    'time': data.get('time', ''),
-                    'description': data.get('description', ''),
-                    'location': data.get('location', '')
+                    'id': event.id,
+                    'title': event.title,
+                    'date': event.date.strftime('%Y-%m-%d'),
+                    'time': event.time.strftime('%H:%M'),
+                    'description': event.description,
+                    'location': event.location,
+                    'type': event.type,
+                    'priority': event.priority
                 }
             })
             
@@ -977,53 +1097,52 @@ def create_event(request):
         'error': 'Sadece POST istekleri kabul edilir'
     }, status=405)
 
-# Event geçici olarak devre dışı
-# @login_required
-# def get_events(request):
-#     """Etkinlikleri getiren API endpoint'i"""
-#     try:
-#         # Tarih filtreleri
-#         start_date = request.GET.get('start')
-#         end_date = request.GET.get('end')
-#         
-#         events = Event.objects.filter(created_by=request.user)
-#         
-#         if start_date:
-#             events = events.filter(date__gte=start_date)
-#         if end_date:
-#             events = events.filter(date__lte=end_date)
-#         
-#         events_data = []
-#         for event in events:
-#             events_data.append({
-#                 'id': event.id,
-#                 'title': event.title,
-#                 'type': event.type,
-#                 'date': event.date.strftime('%Y-%m-%d'),
-#                 'time': event.time.strftime('%H:%M'),
-#                 'timeStr': event.time.strftime('%H:%M'),
-#                 'dateStr': event.date.strftime('%d %b'),
-#                 'description': event.description,
-#                 'location': event.location,
-#                 'priority': event.priority,
-#                 'duration': event.duration,
-#                 'attendees': event.attendees,
-#                 'recurring': event.recurring,
-#                 'recurrence': event.recurrence,
-#                 'dateObj': event.date.isoformat(),
-#                 'read': True
-#             })
-#         
-#         return JsonResponse({
-#             'success': True,
-#             'events': events_data
-#         })
-#
-#     except Exception as e:
-#         return JsonResponse({
-#             'success': False,
-#             'error': str(e)
-#         }, status=500)
+@login_required
+def get_events(request):
+    """Etkinlikleri getiren API endpoint'i"""
+    try:
+        # Tarih filtreleri
+        start_date = request.GET.get('start')
+        end_date = request.GET.get('end')
+        
+        events = Event.objects.filter(created_by=request.user)
+        
+        if start_date:
+            events = events.filter(date__gte=start_date)
+        if end_date:
+            events = events.filter(date__lte=end_date)
+        
+        events_data = []
+        for event in events:
+            events_data.append({
+                'id': event.id,
+                'title': event.title,
+                'type': event.type,
+                'date': event.date.strftime('%Y-%m-%d'),
+                'time': event.time.strftime('%H:%M'),
+                'timeStr': event.time.strftime('%H:%M'),
+                'dateStr': event.date.strftime('%d %b'),
+                'description': event.description,
+                'location': event.location,
+                'priority': event.priority,
+                'duration': event.duration,
+                'attendees': event.attendees,
+                'recurring': event.recurring,
+                'recurrence': event.recurrence,
+                'dateObj': event.date.isoformat(),
+                'read': True
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'events': events_data
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
 
 @login_required
 def kategoriler(request):
@@ -1668,76 +1787,85 @@ def dismiss_notification(request, notification_id):
             'error': str(e)
         }, status=500)
 
-# Event geçici olarak devre dışı
-# def create_event_notifications(event):
-#     """Etkinlik için bildirimler oluştur"""
-#     from datetime import datetime, timedelta
-#     import pytz
-#     
-#     try:
-#         # Hatırlatıcı zamanlarını parse et
-#         reminders = json.loads(event.reminders) if event.reminders else ['15']
-#         
-#         # Etkinlik tarih ve saatini birleştir
-#         naive_datetime = datetime.combine(event.date, event.time)
-#         
-#         # Timezone aware yap - UTC olarak
-#         if timezone.is_naive(naive_datetime):
-#             # Önce local timezone'da oluştur, sonra UTC'ye çevir
-#             local_tz = pytz.timezone('Europe/Istanbul')  # veya settings.TIME_ZONE
-#             local_datetime = local_tz.localize(naive_datetime)
-#             event_datetime = local_datetime.astimezone(pytz.UTC)
-#         else:
-#             event_datetime = naive_datetime
-#         
-#         now_utc = timezone.now()
-#         
-#         # Her hatırlatıcı için bildirim oluştur
-#         for reminder_minutes in reminders:
-#             try:
-#                 minutes = int(reminder_minutes)
-#                 reminder_time = event_datetime - timedelta(minutes=minutes)
-#                 
-#                 # Geçmiş tarih kontrolü - her iki zaman da UTC'de
-#                 if reminder_time > now_utc:
-#                     # Hatırlatıcı bildirimi oluştur
-#                     Notification.objects.create(
-#                         title=f"Etkinlik Hatırlatıcısı: {event.title}",
-#                         message=f"{event.title} etkinliği {minutes} dakika sonra başlayacak. Konum: {event.location or 'Belirtilmemiş'}",
-#                         type='event_reminder',
-#                         event=event,
-#                         user=event.created_by,
-#                         scheduled_time=reminder_time,
-#                         extra_data=json.dumps({
-#                             'event_id': event.id,
-#                             'reminder_minutes': minutes,
-#                             'event_type': event.type,
-#                             'event_priority': event.priority
-#                         })
-#                     )
-#             except (ValueError, TypeError):
-#                 continue
-#         
-#         # Etkinlik başlangıç bildirimi
-#         if event_datetime > now_utc:
-#             Notification.objects.create(
-#                 title=f"Etkinlik Başlıyor: {event.title}",
-#                 message=f"{event.title} etkinliği şimdi başlıyor! Süre: {event.get_duration_display()}",
-#                 type='event_start',
-#                 event=event,
-#                 user=event.created_by,
-#                 scheduled_time=event_datetime,
-#                 extra_data=json.dumps({
-#                     'event_id': event.id,
-#                     'event_type': event.type,
-#                     'event_priority': event.priority,
-#                     'duration': event.duration
-#                 })
-#             )
-#             
-#     except Exception as e:
-#         # Sessizce hata logla (production'da logging kullanılabilir)
-#         pass
+def create_event_notifications(event):
+    """Etkinlik için bildirimler oluştur"""
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    
+    try:
+        # Hatırlatıcı zamanlarını parse et
+        reminders = json.loads(event.reminders) if event.reminders else ['15']
+        
+        # Etkinlik tarih ve saatini birleştir
+        naive_datetime = datetime.combine(event.date, event.time)
+        
+        # Timezone aware yap
+        if timezone.is_naive(naive_datetime):
+            event_datetime = timezone.make_aware(naive_datetime)
+        else:
+            event_datetime = naive_datetime
+        
+        now = timezone.now()
+        
+        # Her hatırlatıcı için bildirim oluştur
+        for reminder_minutes in reminders:
+            try:
+                minutes = int(reminder_minutes)
+                reminder_time = event_datetime - timedelta(minutes=minutes)
+                
+                # Geçmiş tarih kontrolü
+                if reminder_time > now:
+                    # Hatırlatıcı bildirimi oluştur
+                    Notification.objects.create(
+                        title=f"Etkinlik Hatırlatıcısı: {event.title}",
+                        message=f"{event.title} etkinliği {minutes} dakika sonra başlayacak. Konum: {event.location or 'Belirtilmemiş'}",
+                        type='event_reminder',
+                        user=event.created_by,
+                        scheduled_time=reminder_time,
+                        extra_data=json.dumps({
+                            'event_id': event.id,
+                            'reminder_minutes': minutes,
+                            'event_type': event.type,
+                            'event_priority': event.priority
+                        })
+                    )
+            except (ValueError, TypeError):
+                continue
+        
+        # Etkinlik başlangıç bildirimi
+        if event_datetime > now:
+            Notification.objects.create(
+                title=f"Etkinlik Başlıyor: {event.title}",
+                message=f"{event.title} etkinliği şimdi başlıyor! Süre: {event.get_duration_display()}",
+                type='event_start',
+                user=event.created_by,
+                scheduled_time=event_datetime,
+                extra_data=json.dumps({
+                    'event_id': event.id,
+                    'event_type': event.type,
+                    'event_priority': event.priority,
+                    'duration': event.duration
+                })
+            )
+        
+        # Hemen bir bildirim de oluştur (etkinlik oluşturuldu)
+        Notification.objects.create(
+            title=f"Yeni Etkinlik Oluşturuldu",
+            message=f"'{event.title}' etkinliği {event.date.strftime('%d.%m.%Y')} tarihinde {event.time.strftime('%H:%M')} saatinde oluşturuldu.",
+            type='event_created',
+            user=event.created_by,
+            status='sent',
+            extra_data=json.dumps({
+                'event_id': event.id,
+                'event_type': event.type,
+                'event_priority': event.priority
+            })
+        )
+            
+    except Exception as e:
+        # Hata logla
+        print(f"Bildirim oluşturma hatası: {e}")
+        pass
 
 # Etkinlik oluşturma view'ını güncelle (devre dışı sürüm kullanılmıyor)
 # Aşağıdaki sürüm kaldırıldı; aktif olan basit `create_event` yukarıda tanımlıdır.
@@ -1884,3 +2012,257 @@ def brand_distribution_api(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+@login_required
+def malzeme_excel_upload(request):
+    if request.method == 'POST':
+        form = MalzemeExcelUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            excel_file = request.FILES['file']
+            try:
+                df = pd.read_excel(excel_file)
+                eklenen = 0
+                for _, row in df.iterrows():
+                    try:
+                        tarih = row.get('TARİH') or ''
+                        # str veya Timestamp olabilir
+                        if isinstance(tarih, pd.Timestamp):
+                            tarih = tarih.date()
+                        elif isinstance(tarih, str) and '.' in tarih:
+                            tarih = datetime.datetime.strptime(tarih, '%d.%m.%Y').date()
+                        elif isinstance(tarih, str) and '-' in tarih:
+                            tarih = datetime.datetime.strptime(tarih, '%Y-%m-%d').date()
+                        else:
+                            tarih = datetime.datetime.now().date()
+
+                        tutar = str(row.get('TUTAR') or '').replace('.', '').replace(',', '.')
+                        tutar = float(tutar) if tutar else 0
+                        hareket = MalzemeHareketi(
+                            tarih = tarih,
+                            faturano = row.get('FATURA NO', ''),
+                            musteri = row.get('MÜŞTERİ', ''),
+                            urun = row.get('ÜRÜN', ''),
+                            tutar = tutar,
+                            odeme_sekli = row.get('ÖDEME ŞEKLİ', ''),
+                            kullanici = request.user,
+                        )
+                        hareket.save()
+                        eklenen += 1
+                    except Exception as e:
+                        continue # Satırı atla, bir sorun varsa eklemeyi deneme.
+                messages.success(request, f"Başarıyla {eklenen} satır kaydedildi!")
+                return redirect('dashboard:products')
+            except Exception as e:
+                messages.error(request, f"Dosya okunamadı: {str(e)}")
+        else:
+            messages.error(request, "Lütfen geçerli bir dosya seçin.")
+    else:
+        form = MalzemeExcelUploadForm()
+    return render(request, 'dashboard/malzeme_excel_upload.html', {'form': form})
+
+@csrf_exempt
+@login_required
+def malzeme_excel_kaydet(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Sadece POST!'}, status=400)
+    try:
+        # JSON parsing
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            return JsonResponse({'success': False, 'error': f'JSON parsing hatası: {str(e)}'}, status=400)
+        
+        filename = data.get('filename')
+        rows = data.get('rows', [])
+        
+        # Debug: Gelen veriyi kontrol et
+        print(f"Gelen dosya: {filename}")
+        print(f"Gelen satır sayısı: {len(rows)}")
+        print(f"Request body boyutu: {len(request.body)} bytes")
+        if rows:
+            print(f"İlk satır örneği: {rows[0]}")
+            print(f"İlk satır keys: {list(rows[0].keys()) if isinstance(rows[0], dict) else 'Not dict'}")
+        
+        if not filename:
+            return JsonResponse({'success': False, 'error': 'Dosya adı eksik.'}, status=400)
+        if not isinstance(rows, list):
+            return JsonResponse({'success': False, 'error': f'Rows veri tipi yanlış: {type(rows)}'}, status=400)
+        if len(rows) == 0:
+            return JsonResponse({'success': False, 'error': 'Excel dosyasında veri bulunamadı.'}, status=400)
+            
+        dosya = MalzemeDosya.objects.create(dosya_adi=filename, kullanici=request.user)
+        print(f"Dosya oluşturuldu: ID={dosya.id}")
+        
+        eklenen = 0
+        hatalar = []
+        
+        for i, row in enumerate(rows):
+            try:
+                # Debug: Satır verilerini kontrol et
+                print(f"Satır {i+1}: {row}")
+                
+                if not row or not isinstance(row, dict):
+                    print(f"Satır {i+1} geçersiz: {row}")
+                    continue
+                
+                # Tarih işleme - daha esnek
+                tarih_raw = None
+                for key in row.keys():
+                    if any(x in key.upper() for x in ['TARİH', 'TARIH', 'DATE']):
+                        tarih_raw = row[key]
+                        break
+                
+                tarih = date.today()  # Default tarih
+                
+                if tarih_raw:
+                    try:
+                        if isinstance(tarih_raw, str) and tarih_raw.strip():
+                            tarih_str = tarih_raw.strip()
+                            if '.' in tarih_str:
+                                # DD.MM.YYYY veya DD.MM.YY formatı
+                                parts = tarih_str.split('.')
+                                if len(parts) == 3:
+                                    day, month, year = parts
+                                    if len(year) == 2:
+                                        year = '20' + year if int(year) < 50 else '19' + year
+                                    tarih = date(int(year), int(month), int(day))
+                            elif '-' in tarih_str:
+                                # YYYY-MM-DD formatı
+                                tarih = datetime.datetime.strptime(tarih_str, '%Y-%m-%d').date()
+                        elif isinstance(tarih_raw, (int, float)) and tarih_raw > 0:
+                            # Excel serial date
+                            tarih = datetime.fromordinal(date(1900,1,1).toordinal() + int(tarih_raw) - 2).date()
+                    except Exception as e:
+                        print(f"Tarih parse hatası: {e}, raw: {tarih_raw}")
+                        tarih = date.today()
+                
+                # Tüm sütun adlarını kontrol et ve esnek eşleştirme yap
+                row_keys = list(row.keys())
+                print(f"Satır {i+1} sütunları: {row_keys}")
+                
+                # Esnek sütun eşleştirmesi - daha geniş arama
+                faturano = ''
+                for key in row_keys:
+                    key_upper = key.upper().strip()
+                    if any(x in key_upper for x in ['FATURA', 'INVOICE', 'NO', 'BELGE']):
+                        val = row[key]
+                        faturano = str(val).strip() if val is not None else ''
+                        break
+                
+                musteri = ''
+                for key in row_keys:
+                    key_upper = key.upper().strip()
+                    if any(x in key_upper for x in ['MÜŞTERİ', 'MÜŞTERI', 'MUSTERI', 'CUSTOMER', 'CLIENT', 'CARİ', 'CARI']):
+                        val = row[key]
+                        musteri = str(val).strip() if val is not None else ''
+                        break
+                
+                urun = ''
+                for key in row_keys:
+                    key_upper = key.upper().strip()
+                    if any(x in key_upper for x in ['ÜRÜN', 'URUN', 'PRODUCT', 'ITEM', 'MALZEME', 'HİZMET', 'HIZMET']):
+                        val = row[key]
+                        urun = str(val).strip() if val is not None else ''
+                        break
+                
+                tutar_raw = 0
+                for key in row_keys:
+                    key_upper = key.upper().strip()
+                    if any(x in key_upper for x in ['TUTAR', 'AMOUNT', 'PRICE', 'FİYAT', 'FIYAT', 'MIKTAR', 'TOPLAM']):
+                        tutar_raw = row[key]
+                        break
+                
+                odeme_sekli = ''
+                for key in row_keys:
+                    key_upper = key.upper().strip()
+                    if any(x in key_upper for x in ['ÖDEME', 'ODEME', 'PAYMENT', 'PAY', 'PLAN']):
+                        val = row[key]
+                        odeme_sekli = str(val).strip() if val is not None else ''
+                        break
+                
+                # Tutar işleme - daha esnek
+                tutar = 0
+                try:
+                    if tutar_raw is not None and tutar_raw != '':
+                        if isinstance(tutar_raw, (int, float)):
+                            tutar = float(tutar_raw)
+                        else:
+                            # String işleme - Türkçe sayı formatını destekle
+                            tutar_str = str(tutar_raw).strip()
+                            if tutar_str:
+                                # Virgül ve nokta işleme
+                                if ',' in tutar_str and '.' in tutar_str:
+                                    # 1.234,56 formatı
+                                    tutar_str = tutar_str.replace('.', '').replace(',', '.')
+                                elif ',' in tutar_str:
+                                    # 1234,56 formatı
+                                    tutar_str = tutar_str.replace(',', '.')
+                                # Sadece sayı ve nokta bırak
+                                import re
+                                tutar_str = re.sub(r'[^\d.]', '', tutar_str)
+                                tutar = float(tutar_str) if tutar_str else 0
+                except Exception as e:
+                    print(f"Tutar parse hatası: {e}, raw: {tutar_raw}")
+                    tutar = 0
+                
+                print(f"İşlenmiş veri: TARİH={tarih}, FATURANO='{faturano}', MÜŞTERİ='{musteri}', ÜRÜN='{urun}', TUTAR={tutar}, ÖDEME='{odeme_sekli}'")
+                
+                # Daha esnek kontrol - en az bir anlamlı veri olsun
+                has_meaningful_data = any([
+                    faturano and len(faturano.strip()) > 0,
+                    musteri and len(musteri.strip()) > 0,
+                    urun and len(urun.strip()) > 0,
+                    tutar > 0,
+                    odeme_sekli and len(odeme_sekli.strip()) > 0
+                ])
+                
+                if not has_meaningful_data:
+                    print(f"Satır {i+1} anlamlı veri yok, atlanıyor")
+                    continue
+                
+                # Kayıt oluştur - boş alanları varsayılan değerlerle doldur
+                try:
+                    hareket = MalzemeHareketi.objects.create(
+                        dosya=dosya,
+                        tarih=tarih,
+                        faturano=(faturano or f'AUTO-{i+1}')[:100],  # Boşsa otomatik numara
+                        musteri=(musteri or 'Belirtilmemiş')[:255],
+                        urun=(urun or 'Belirtilmemiş')[:255],
+                        tutar=tutar,
+                        odeme_sekli=(odeme_sekli or 'Belirtilmemiş')[:100],
+                        kullanici=request.user,
+                    )
+                    print(f"Kayıt başarılı: ID={hareket.id}")
+                    eklenen += 1
+                except Exception as db_error:
+                    error_msg = f"Satır {i+1} DB hatası: {db_error}"
+                    print(error_msg)
+                    hatalar.append(error_msg)
+                    continue
+                
+            except Exception as e:
+                error_msg = f"Satır {i+1} işlem hatası: {e}"
+                print(error_msg)
+                hatalar.append(error_msg)
+                continue
+        print(f"Toplam eklenen kayıt: {eklenen}")
+        print(f"Toplam hata sayısı: {len(hatalar)}")
+        
+        if eklenen == 0:
+            error_detail = f"Hiçbir kayıt eklenemedi. Toplam {len(rows)} satır işlendi."
+            if hatalar:
+                error_detail += f" İlk 3 hata: {'; '.join(hatalar[:3])}"
+            return JsonResponse({'success': False, 'error': error_detail}, status=400)
+        
+        # Kısmi başarı durumu
+        result = {'success': True, 'count': eklenen}
+        if hatalar:
+            result['warnings'] = f"{len(hatalar)} satırda hata oluştu"
+            result['errors'] = hatalar[:5]  # İlk 5 hatayı göster
+        
+        return JsonResponse(result)
+    except Exception as e:
+        print(f"Genel hata: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': f'Sunucu hatası: {str(e)}'}, status=500)

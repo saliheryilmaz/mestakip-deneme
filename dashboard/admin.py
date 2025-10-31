@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import Siparis, UserProfile, Notification, Transaction, TransactionCategory
-# Event geçici olarak devre dışı
+from .models import Siparis, UserProfile, Notification, Transaction, TransactionCategory, Event, MalzemeHareketi, MalzemeDosya
 
 @admin.register(Siparis)
 class SiparisAdmin(admin.ModelAdmin):
@@ -58,62 +57,61 @@ class SiparisAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         return super().get_queryset(request).select_related()
 
-# Event admin geçici olarak devre dışı
-# @admin.register(Event)
-# class EventAdmin(admin.ModelAdmin):
-#     """Etkinlik admin paneli"""
-#     
-#     list_display = [
-#         'id', 'title', 'type', 'date', 'time', 'priority', 
-#         'location', 'created_by', 'created_at'
-#     ]
-#     
-#     list_filter = [
-#         'type', 'priority', 'date', 'recurring', 'created_at'
-#     ]
-#     
-#     search_fields = [
-#         'title', 'description', 'location', 'attendees'
-#     ]
-#     
-#     list_editable = [
-#         'type', 'priority'
-#     ]
-#     
-#     readonly_fields = [
-#         'created_at', 'updated_at'
-#     ]
-#     
-#     fieldsets = (
-#         ('Temel Bilgiler', {
-#             'fields': ('title', 'description', 'type', 'priority')
-#         }),
-#         ('Tarih ve Zaman', {
-#             'fields': ('date', 'time', 'duration')
-#         }),
-#         ('Konum ve Katılımcılar', {
-#             'fields': ('location', 'attendees')
-#         }),
-#         ('Tekrarlama', {
-#             'fields': ('recurring', 'recurrence'),
-#             'classes': ('collapse',)
-#         }),
-#         ('Hatırlatıcılar', {
-#             'fields': ('reminders',),
-#             'classes': ('collapse',)
-#         }),
-#         ('Sistem Bilgileri', {
-#             'fields': ('created_by', 'created_at', 'updated_at'),
-#             'classes': ('collapse',)
-#         }),
-#     )
-#     
-#     ordering = ['-created_at']
-#     
-#     def save_model(self, request, obj, form, change):
-#         if not change:  # Yeni kayıt ise
-#             obj.created_by = request.user
-#         super().save_model(request, obj, form, change)
+@admin.register(Event)
+class EventAdmin(admin.ModelAdmin):
+    """Etkinlik admin paneli"""
+    
+    list_display = [
+        'id', 'title', 'type', 'date', 'time', 'priority', 
+        'location', 'created_by', 'created_at'
+    ]
+    
+    list_filter = [
+        'type', 'priority', 'date', 'recurring', 'created_at'
+    ]
+    
+    search_fields = [
+        'title', 'description', 'location', 'attendees'
+    ]
+    
+    list_editable = [
+        'type', 'priority'
+    ]
+    
+    readonly_fields = [
+        'created_at', 'updated_at'
+    ]
+    
+    fieldsets = (
+        ('Temel Bilgiler', {
+            'fields': ('title', 'description', 'type', 'priority')
+        }),
+        ('Tarih ve Zaman', {
+            'fields': ('date', 'time', 'duration')
+        }),
+        ('Konum ve Katılımcılar', {
+            'fields': ('location', 'attendees')
+        }),
+        ('Tekrarlama', {
+            'fields': ('recurring', 'recurrence'),
+            'classes': ('collapse',)
+        }),
+        ('Hatırlatıcılar', {
+            'fields': ('reminders',),
+            'classes': ('collapse',)
+        }),
+        ('Sistem Bilgileri', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    ordering = ['-created_at']
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Yeni kayıt ise
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
@@ -231,3 +229,6 @@ class TransactionAdmin(admin.ModelAdmin):
     search_fields = ['aciklama', 'kasa_adi']
     readonly_fields = ['created_at', 'updated_at']
     ordering = ['-tarih', '-id']
+
+admin.site.register(MalzemeHareketi)
+admin.site.register(MalzemeDosya)

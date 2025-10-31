@@ -4,6 +4,69 @@
 {% block title %}Gelir/Gider Toplamları - Mestakip{% endblock %}
 {% block page_name %}gelir-gider-toplamlari{% endblock %}
 
+{% block extra_css %}
+<style>
+/* Mobile Responsive Styles for Finance Cards */
+@media (max-width: 768px) {
+    .row.g-4 {
+        --bs-gutter-x: 0.75rem;
+        --bs-gutter-y: 0.75rem;
+    }
+    
+    .card .card-body {
+        padding: 1rem 0.75rem;
+    }
+    
+    .card .fs-3 {
+        font-size: 1.5rem !important;
+    }
+    
+    .card .fs-1 {
+        font-size: 2rem !important;
+    }
+    
+    .text-white-50 {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .col-lg-2 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+    
+    .card .card-body {
+        padding: 0.75rem 0.5rem;
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .card .fs-3 {
+        font-size: 1.25rem !important;
+    }
+    
+    .card .fs-1 {
+        font-size: 1.5rem !important;
+    }
+    
+    .text-white-50 {
+        font-size: 0.75rem;
+    }
+}
+
+/* Card hover effects */
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -13,7 +76,7 @@
 </div>
 
 <div class="row g-4 mb-4">
-    <div class="col-md-4">
+    <div class="col-lg-2 col-md-4 col-sm-6">
         <div class="card text-white" style="background:#4e79a7;">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div>
@@ -24,7 +87,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-lg-2 col-md-4 col-sm-6">
         <div class="card text-white" style="background:#4e79a7;">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div>
@@ -35,7 +98,29 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="card text-white" style="background:#e74c3c;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fs-3 fw-bold">{{ canta_toplam|floatformat:0 }}</div>
+                    <div class="text-white-50">ÇANTA</div>
+                </div>
+                <i class="bi bi-bag fs-1 opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="card text-white" style="background:#9b59b6;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fs-3 fw-bold">{{ mehmet_havale_toplam|floatformat:0 }}</div>
+                    <div class="text-white-50">MEHMET HAVALE</div>
+                </div>
+                <i class="bi bi-bank fs-1 opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6">
         <div class="card text-white" style="background:#1aa785;">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div>

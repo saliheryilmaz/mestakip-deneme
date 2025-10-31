@@ -170,104 +170,102 @@ class Siparis(models.Model):
         }
         return colors.get(self.sms_durum, 'secondary')
 
-# Geçici olarak devre dışı - pytz sorunu
-# Geçici olarak devre dışı - pytz sorunu
-# class Event(models.Model):
-#     """Takvim etkinlikleri modeli"""
-#     
-#     TYPE_CHOICES = [
-#         ('event', 'Etkinlik'),
-#         ('meeting', 'Toplantı'),
-#         ('task', 'Görev'),
-#         ('reminder', 'Hatırlatıcı'),
-#         ('deadline', 'Son Tarih'),
-#     ]
-#     
-#     PRIORITY_CHOICES = [
-#         ('low', 'Düşük'),
-#         ('medium', 'Orta'),
-#         ('high', 'Yüksek'),
-#     ]
-#     
-#     RECURRENCE_CHOICES = [
-#         ('none', 'Tekrarlanmaz'),
-#         ('daily', 'Günlük'),
-#         ('weekly', 'Haftalık'),
-#         ('biweekly', '2 Haftada Bir'),
-#         ('monthly', 'Aylık'),
-#         ('yearly', 'Yıllık'),
-#     ]
-#     
-#     # Temel Bilgiler
-#     title = models.CharField(max_length=200, verbose_name="Başlık")
-#     description = models.TextField(blank=True, null=True, verbose_name="Açıklama")
-#     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='event', verbose_name="Tür")
-#     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', verbose_name="Öncelik")
-#     
-#     # Tarih ve Zaman
-#     date = models.DateField(verbose_name="Tarih")
-#     time = models.TimeField(verbose_name="Başlangıç Saati")
-#     duration = models.PositiveIntegerField(default=60, verbose_name="Süre (dakika)")
-#     
-#     # Konum ve Katılımcılar
-#     location = models.CharField(max_length=300, blank=True, null=True, verbose_name="Konum")
-#     attendees = models.TextField(blank=True, null=True, verbose_name="Katılımcılar")
-#     
-#     # Tekrarlama
-#     recurring = models.BooleanField(default=False, verbose_name="Tekrarlanan")
-#     recurrence = models.CharField(max_length=20, choices=RECURRENCE_CHOICES, default='none', verbose_name="Tekrar Deseni")
-#     
-#     # Hatırlatıcılar (JSON formatında)
-#     reminders = models.TextField(blank=True, null=True, verbose_name="Hatırlatıcılar")
-#     
-#     # Oluşturan kullanıcı
-#     created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Oluşturan")
-#     
-#     # Zaman Damgaları
-#     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Oluşturulma Tarihi")
-#     updated_at = models.DateTimeField(auto_now=True, verbose_name="Güncellenme Tarihi")
-#     
-#     class Meta:
-#         verbose_name = "Etkinlik"
-#         verbose_name_plural = "Etkinlikler"
-#         ordering = ['date', 'time']
-#     
-#     def __str__(self):
-#         return f"{self.title} - {self.date} {self.time}"
-#     
-#     def get_type_color(self):
-#         """Etkinlik türü için renk döndür"""
-#         colors = {
-#             'event': '#3b82f6',
-#             'meeting': '#10b981',
-#             'task': '#f59e0b',
-#             'reminder': '#8b5cf6',
-#             'deadline': '#ef4444'
-#         }
-#         return colors.get(self.type, '#6b7280')
-#     
-#     def get_priority_color(self):
-#         """Öncelik için renk döndür"""
-#         colors = {
-#             'low': '#10b981',
-#             'medium': '#f59e0b',
-#             'high': '#ef4444'
-#         }
-#         return colors.get(self.priority, '#6b7280')
-#     
-#     def get_duration_display(self):
-#         """Süreyi okunabilir formatta döndür"""
-#         if self.duration == 480:
-#             return 'Tüm gün'
-#         hours = self.duration // 60
-#         minutes = self.duration % 60
-#         
-#         if hours == 0:
-#             return f'{minutes} dakika'
-#         elif minutes == 0:
-#             return f'{hours} saat'
-#         else:
-#             return f'{hours}s {minutes}d'
+class Event(models.Model):
+    """Takvim etkinlikleri modeli"""
+    
+    TYPE_CHOICES = [
+        ('event', 'Etkinlik'),
+        ('meeting', 'Toplantı'),
+        ('task', 'Görev'),
+        ('reminder', 'Hatırlatıcı'),
+        ('deadline', 'Son Tarih'),
+    ]
+    
+    PRIORITY_CHOICES = [
+        ('low', 'Düşük'),
+        ('medium', 'Orta'),
+        ('high', 'Yüksek'),
+    ]
+    
+    RECURRENCE_CHOICES = [
+        ('none', 'Tekrarlanmaz'),
+        ('daily', 'Günlük'),
+        ('weekly', 'Haftalık'),
+        ('biweekly', '2 Haftada Bir'),
+        ('monthly', 'Aylık'),
+        ('yearly', 'Yıllık'),
+    ]
+    
+    # Temel Bilgiler
+    title = models.CharField(max_length=200, verbose_name="Başlık")
+    description = models.TextField(blank=True, null=True, verbose_name="Açıklama")
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='event', verbose_name="Tür")
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', verbose_name="Öncelik")
+    
+    # Tarih ve Zaman
+    date = models.DateField(verbose_name="Tarih")
+    time = models.TimeField(verbose_name="Başlangıç Saati")
+    duration = models.PositiveIntegerField(default=60, verbose_name="Süre (dakika)")
+    
+    # Konum ve Katılımcılar
+    location = models.CharField(max_length=300, blank=True, null=True, verbose_name="Konum")
+    attendees = models.TextField(blank=True, null=True, verbose_name="Katılımcılar")
+    
+    # Tekrarlama
+    recurring = models.BooleanField(default=False, verbose_name="Tekrarlanan")
+    recurrence = models.CharField(max_length=20, choices=RECURRENCE_CHOICES, default='none', verbose_name="Tekrar Deseni")
+    
+    # Hatırlatıcılar (JSON formatında)
+    reminders = models.TextField(blank=True, null=True, verbose_name="Hatırlatıcılar")
+    
+    # Oluşturan kullanıcı
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Oluşturan")
+    
+    # Zaman Damgaları
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Oluşturulma Tarihi")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Güncellenme Tarihi")
+    
+    class Meta:
+        verbose_name = "Etkinlik"
+        verbose_name_plural = "Etkinlikler"
+        ordering = ['date', 'time']
+    
+    def __str__(self):
+        return f"{self.title} - {self.date} {self.time}"
+    
+    def get_type_color(self):
+        """Etkinlik türü için renk döndür"""
+        colors = {
+            'event': '#3b82f6',
+            'meeting': '#10b981',
+            'task': '#f59e0b',
+            'reminder': '#8b5cf6',
+            'deadline': '#ef4444'
+        }
+        return colors.get(self.type, '#6b7280')
+    
+    def get_priority_color(self):
+        """Öncelik için renk döndür"""
+        colors = {
+            'low': '#10b981',
+            'medium': '#f59e0b',
+            'high': '#ef4444'
+        }
+        return colors.get(self.priority, '#6b7280')
+    
+    def get_duration_display(self):
+        """Süreyi okunabilir formatta döndür"""
+        if self.duration == 480:
+            return 'Tüm gün'
+        hours = self.duration // 60
+        minutes = self.duration % 60
+        
+        if hours == 0:
+            return f'{minutes} dakika'
+        elif minutes == 0:
+            return f'{hours} saat'
+        else:
+            return f'{hours}s {minutes}d'
 
 class Notification(models.Model):
     """Bildirim modeli - Etkinlik hatırlatıcıları ve sistem bildirimleri"""
@@ -444,3 +442,23 @@ class Transaction(models.Model):
     @property
     def toplam(self):
         return (self.nakit or 0) + (self.kredi_karti or 0) + (self.cari or 0) + (self.mehmet_havale or 0)
+
+class MalzemeDosya(models.Model):
+    dosya_adi = models.CharField(max_length=200)
+    yukleme_tarihi = models.DateTimeField(auto_now_add=True)
+    kullanici = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    def __str__(self):
+        return f"{self.dosya_adi} - {self.yukleme_tarihi}" 
+
+class MalzemeHareketi(models.Model):
+    dosya = models.ForeignKey('MalzemeDosya', on_delete=models.CASCADE, related_name='satirlar', null=True, blank=True)
+    tarih = models.DateField()
+    faturano = models.CharField(max_length=100)
+    musteri = models.CharField(max_length=255)
+    urun = models.CharField(max_length=255)
+    tutar = models.DecimalField(max_digits=14, decimal_places=2)
+    odeme_sekli = models.CharField(max_length=100)
+    kullanici = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    eklenme_zamani = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f'{self.tarih} - {self.urun} - {self.tutar}'

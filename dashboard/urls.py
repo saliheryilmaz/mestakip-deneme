@@ -33,7 +33,7 @@ urlpatterns = [
     path('messages/', views.messages_view, name='messages'),
     path('calendar/', views.calendar, name='calendar'),
     path('api/events/create/', views.create_event, name='create_event'),
-    # path('api/events/', views.get_events, name='get_events'),  # Geçici olarak devre dışı
+    path('api/events/', views.get_events, name='get_events'),
     path('api/finance/overview/', views.finance_overview, name='finance_overview'),
     # Bildirim API'leri
     path('api/notifications/', views.get_notifications, name='get_notifications'),
@@ -48,4 +48,6 @@ urlpatterns = [
     path('settings/', views.settings, name='settings'),
     path('security/', views.security, name='security'),
     path('help/', views.help, name='help'),
+    path('malzeme-excel-yukle/', views.malzeme_excel_upload, name='malzeme_excel_upload'),
+    path('malzeme-excel-kaydet/', views.malzeme_excel_kaydet, name='malzeme_excel_kaydet'),
 ]

@@ -26,14 +26,14 @@ document.addEventListener('alpine:init', () => {
 
     init() {
       this.loadEvents();
-      
+
       // Bugünün tarihini doğru şekilde al
       const today = new Date();
       const year = today.getFullYear();
       const month = String(today.getMonth() + 1).padStart(2, '0');
       const day = String(today.getDate()).padStart(2, '0');
       const todayString = `${year}-${month}-${day}`;
-      
+
       this.selectedDate = today;
       this.selectedDay = todayString;
 
@@ -178,7 +178,7 @@ document.addEventListener('alpine:init', () => {
         const month_num = String(date.getMonth() + 1).padStart(2, '0');
         const day_num = String(date.getDate()).padStart(2, '0');
         const dateString = `${year}-${month_num}-${day_num}`;
-        
+
         const hasEvents = this.events.some(event => event.date === dateString);
 
         days.push({
@@ -211,7 +211,7 @@ document.addEventListener('alpine:init', () => {
         const month_num = String(date.getMonth() + 1).padStart(2, '0');
         const day_num = String(date.getDate()).padStart(2, '0');
         const dateString = `${year}-${month_num}-${day_num}`;
-        
+
         const dayEvents = this.getEventsForDate(dateString).filter(event =>
           this.visibleTypes.includes(event.type)
         );
@@ -242,7 +242,7 @@ document.addEventListener('alpine:init', () => {
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         const dateString = `${year}-${month}-${day}`;
-        
+
         days.push({
           date: dateString,
           dayName: date.toLocaleDateString('tr-TR', { weekday: 'short' }),
@@ -311,7 +311,7 @@ document.addEventListener('alpine:init', () => {
       const month = String(today.getMonth() + 1).padStart(2, '0');
       const day = String(today.getDate()).padStart(2, '0');
       const todayString = `${year}-${month}-${day}`;
-      
+
       this.currentDate = today;
       this.miniCalendarDate = today;
       this.selectedDay = todayString;
@@ -350,12 +350,12 @@ document.addEventListener('alpine:init', () => {
         return false;
       }
       // Sadece tarih kısmını karşılaştır (saat dilimi sorunlarını önlemek için)
-      const dateStr = date.getFullYear() + '-' + 
-                     String(date.getMonth() + 1).padStart(2, '0') + '-' + 
-                     String(date.getDate()).padStart(2, '0');
-      const todayStr = today.getFullYear() + '-' + 
-                      String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-                      String(today.getDate()).padStart(2, '0');
+      const dateStr = date.getFullYear() + '-' +
+        String(date.getMonth() + 1).padStart(2, '0') + '-' +
+        String(date.getDate()).padStart(2, '0');
+      const todayStr = today.getFullYear() + '-' +
+        String(today.getMonth() + 1).padStart(2, '0') + '-' +
+        String(today.getDate()).padStart(2, '0');
       return dateStr === todayStr;
     },
 
@@ -546,17 +546,17 @@ document.addEventListener('alpine:init', () => {
       const month = String(today.getMonth() + 1).padStart(2, '0');
       const day = String(today.getDate()).padStart(2, '0');
       const todayString = `${year}-${month}-${day}`;
-      
+
       this.eventData.date = todayString;
       this.eventData.time = '13:50';
       this.eventData.recurrence = 'none';
       this.eventData.selectedReminders = ['15'];
-      
+
       // selectedReminders değişikliklerini reminders ile senkronize et
       this.$watch('eventData.selectedReminders', (newValue) => {
         this.eventData.reminders = newValue;
       });
-      
+
       console.log('Modal initialized with data:', this.eventData);
     },
 
@@ -602,14 +602,14 @@ document.addEventListener('alpine:init', () => {
             }
           }
         }
-        
+
         console.log('CSRF Token:', csrfToken);
-        
+
         if (!csrfToken) {
           this.showValidationError('CSRF token bulunamadı. Sayfayı yenileyin.');
           return;
         }
-        
+
         // Event data hazırla
         const eventData = {
           ...this.eventData,
@@ -617,9 +617,9 @@ document.addEventListener('alpine:init', () => {
           recurrence: this.eventData.recurring ? this.eventData.recurrence : 'none',
           reminders: Array.isArray(this.eventData.selectedReminders) ? this.eventData.selectedReminders : ['15']
         };
-        
+
         console.log('Sending event data:', eventData);
-        
+
         // API çağrısı yap
         console.log('API çağrısı yapılıyor...');
         console.log('URL:', '/dashboard/api/events/create/');
@@ -628,7 +628,7 @@ document.addEventListener('alpine:init', () => {
           'X-CSRFToken': csrfToken,
         });
         console.log('Body:', JSON.stringify(eventData));
-        
+
         const response = await fetch('/dashboard/api/events/create/', {
           method: 'POST',
           headers: {
@@ -637,13 +637,13 @@ document.addEventListener('alpine:init', () => {
           },
           body: JSON.stringify(eventData)
         });
-        
+
         console.log('Response status:', response.status);
         console.log('Response headers:', response.headers);
-        
+
         const result = await response.json();
         console.log('API Response:', result);
-        
+
         if (result.success) {
           // Başarı mesajı
           if (typeof Swal !== 'undefined') {
@@ -656,24 +656,24 @@ document.addEventListener('alpine:init', () => {
           } else {
             alert(`Etkinlik "${this.eventData.title}" başarıyla oluşturuldu!`);
           }
-          
+
           // Bildirim sistemini güncelle
           if (window.notificationSystem) {
             window.notificationSystem.loadNotifications();
           }
-          
+
           // Modal'ı kapat ve formu sıfırla
           this.closeModal();
-          
+
           // Sayfayı yenile (etkinlikleri görmek için)
           setTimeout(() => {
             window.location.reload();
           }, 1500);
-          
+
         } else {
           this.showValidationError('Hata: ' + (result.error || 'Etkinlik oluşturulamadı'));
         }
-        
+
       } catch (error) {
         console.error('API Error:', error);
         this.showValidationError('Sunucu ile iletişim kurulurken hata oluştu: ' + error.message);
@@ -733,7 +733,7 @@ document.addEventListener('alpine:init', () => {
       const month = String(today.getMonth() + 1).padStart(2, '0');
       const day = String(today.getDate()).padStart(2, '0');
       const todayString = `${year}-${month}-${day}`;
-      
+
       this.eventData = {
         title: '',
         type: 'reminder',

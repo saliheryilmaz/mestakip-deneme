@@ -1,5 +1,7 @@
 from django import forms
 from .models import Transaction, TransactionCategory
+from .models import Siparis
+from .models import MalzemeHareketi
 
 
 class TransactionForm(forms.ModelForm):
@@ -54,8 +56,6 @@ class TransactionForm(forms.ModelForm):
             raise forms.ValidationError(f'Sadece bir ödeme türü seçilmelidir. Şu anda seçili: {", ".join(filled_fields)}')
         
         return cleaned
-from django import forms
-from .models import Siparis
 
 class SiparisForm(forms.ModelForm):
     """Sipariş formu"""
@@ -186,3 +186,6 @@ class SiparisForm(forms.ModelForm):
             })
         
         return cleaned_data
+
+class MalzemeExcelUploadForm(forms.Form):
+    file = forms.FileField(label='Excel Dosyası (*.xls, *.xlsx)', required=True)

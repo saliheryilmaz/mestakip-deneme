@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,29 +13,35 @@
             padding: 20px;
             background: #f5f5f5;
         }
+
         .container {
             background: white;
             padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+
         h1 {
             color: #333;
         }
+
         .test-section {
             margin: 20px 0;
             padding: 15px;
             background: #f8f9fa;
             border-left: 4px solid #007bff;
         }
+
         .blocked {
             color: #dc3545;
             font-weight: bold;
         }
+
         .allowed {
             color: #28a745;
             font-weight: bold;
         }
+
         button {
             background: #007bff;
             color: white;
@@ -44,15 +51,18 @@
             cursor: pointer;
             margin: 5px;
         }
+
         button:hover {
             background: #0056b3;
         }
+
         code {
             background: #f4f4f4;
             padding: 2px 6px;
             border-radius: 3px;
             font-family: monospace;
         }
+
         .info {
             background: #d1ecf1;
             border: 1px solid #bee5eb;
@@ -63,10 +73,11 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>🔇 Advanced Console Filter Test</h1>
-        
+
         <div class="info">
             <strong>Console'u açın (F12)</strong> ve aşağıdaki testleri çalıştırın.
             <br>Engellenen mesajlar console'da görünmeyecek.
@@ -134,7 +145,7 @@
             // Check if message should be blocked
             function shouldBlock(message) {
                 const msgStr = String(message).toLowerCase();
-                return blockedPatterns.some(pattern => 
+                return blockedPatterns.some(pattern =>
                     msgStr.includes(pattern.toLowerCase())
                 );
             }
@@ -203,44 +214,45 @@
 
         function testAllVariations() {
             console.log('=== Test 3: Tüm Varyasyonlar ===');
-            
+
             // Büyük/küçük harf varyasyonları
             console.log('APPLICATION LOADED SUCCESSFULLY'); // ❌ Engellenmeli
             console.log('application loaded successfully'); // ❌ Engellenmeli
             console.log('Application Loaded Successfully'); // ❌ Engellenmeli
-            
+
             // Farklı ifadeler
             console.log('App loaded successfully'); // ❌ Engellenmeli
             console.log('System initialized successfully'); // ❌ Engellenmeli
             console.log('Dashboard manager started'); // ❌ Engellenmeli
-            
+
             // Emoji
             console.log('🚀 Starting application'); // ❌ Engellenmeli
-            
+
             console.log('=== Test 3 Bitti (Yukarıdaki mesajlar görünmemeli) ===');
         }
 
         function testConsoleMethods() {
             console.log('=== Test 4: Farklı Console Metodları ===');
-            
+
             console.log('Application loaded successfully!'); // ❌ Engellenmeli
             console.info('Application loaded successfully!'); // ❌ Engellenmeli
             console.debug('Application loaded successfully!'); // ❌ Engellenmeli
             console.warn('Application loaded successfully!'); // ❌ Engellenmeli
-            
+
             console.log('Normal message'); // ✅ Görünmeli
             console.info('Info message'); // ✅ Görünmeli
             console.debug('Debug message'); // ✅ Görünmeli
             console.warn('Warning message'); // ✅ Görünmeli
-            
+
             console.log('=== Test 4 Bitti ===');
         }
 
         // Sayfa yüklendiğinde otomatik test
-        window.addEventListener('load', function() {
+        window.addEventListener('load', function () {
             console.log('%c📋 Test Sayfası Yüklendi', 'color: #007bff; font-weight: bold; font-size: 14px;');
             console.log('Console Filter aktif. Testleri çalıştırmak için butonlara tıklayın.');
         });
     </script>
 </body>
+
 </html>
