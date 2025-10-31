@@ -50,4 +50,5 @@ urlpatterns = [
     path('help/', views.help, name='help'),
     path('malzeme-excel-yukle/', views.malzeme_excel_upload, name='malzeme_excel_upload'),
     path('malzeme-excel-kaydet/', views.malzeme_excel_kaydet, name='malzeme_excel_kaydet'),
+    path('health/', views.health_check, name='health_check'),
 ]

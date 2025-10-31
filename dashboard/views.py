@@ -2024,6 +2024,12 @@ def malzeme_excel_upload(request):
                 wb = load_workbook(excel_file)
                 ws = wb.active
                 
+                # Create MalzemeDosya first
+                dosya = MalzemeDosya.objects.create(
+                    dosya_adi=excel_file.name,
+                    kullanici=request.user
+                )
+                
                 # Get headers from first row
                 headers = []
                 for cell in ws[1]:
@@ -2036,38 +2042,55 @@ def malzeme_excel_upload(request):
                         # Create row dict
                         row_data = {}
                         for col_num, header in enumerate(headers, 1):
-                            cell_value = ws.cell(row=row_num, column=col_num).value
-                            row_data[header] = cell_value
+                            if col_num <= len(headers):
+                                cell_value = ws.cell(row=row_num, column=col_num).value
+                                row_data[header] = cell_value
                         
-                        tarih = row_data.get('TARİH') or ''
+                        tarih = row_data.get('TARİH') or row_data.get('TARIH') or ''
                         # Handle different date formats
                         if isinstance(tarih, datetime.datetime):
                             tarih = tarih.date()
-                        elif isinstance(tarih, str) and '.' in tarih:
-                            tarih = datetime.datetime.strptime(tarih, '%d.%m.%Y').date()
-                        elif isinstance(tarih, str) and '-' in tarih:
-                            tarih = datetime.datetime.strptime(tarih, '%Y-%m-%d').date()
+                        elif isinstance(tarih, str) and tarih and '.' in tarih:
+                            try:
+                                tarih = datetime.datetime.strptime(tarih, '%d.%m.%Y').date()
+                            except:
+                                tarih = date.today()
+                        elif isinstance(tarih, str) and tarih and '-' in tarih:
+                            try:
+                                tarih = datetime.datetime.strptime(tarih, '%Y-%m-%d').date()
+                            except:
+                                tarih = date.today()
                         else:
-                            tarih = datetime.datetime.now().date()
+                            tarih = date.today()
 
-                        tutar = str(row_data.get('TUTAR') or '').replace('.', '').replace(',', '.')
-                        tutar = float(tutar) if tutar else 0
+                        tutar_raw = row_data.get('TUTAR') or '0'
+                        try:
+                            tutar = float(str(tutar_raw).replace('.', '').replace(',', '.')) if tutar_raw else 0
+                        except:
+                            tutar = 0
+                            
                         hareket = MalzemeHareketi(
-                            tarih = tarih,
-                            faturano = row_data.get('FATURA NO', ''),
-                            musteri = row_data.get('MÜŞTERİ', ''),
-                            urun = row_data.get('ÜRÜN', ''),
-                            tutar = tutar,
-                            odeme_sekli = row_data.get('ÖDEME ŞEKLİ', ''),
-                            kullanici = request.user,
+                            dosya=dosya,
+                            tarih=tarih,
+                            faturano=str(row_data.get('FATURA NO') or row_data.get('FATURANO') or '')[:100],
+                            musteri=str(row_data.get('MÜŞTERİ') or row_data.get('MÜŞTERI') or '')[:255],
+                            urun=str(row_data.get('ÜRÜN') or row_data.get('URUN') or '')[:255],
+                            tutar=tutar,
+                            odeme_sekli=str(row_data.get('ÖDEME ŞEKLİ') or row_data.get('ÖDEME PLANI') or '')[:100],
+                            kullanici=request.user,
                         )
                         hareket.save()
                         eklenen += 1
                     except Exception as e:
-                        continue # Satırı atla, bir sorun varsa eklemeyi deneme.
+                        print(f"Row error: {e}")
+                        continue
+                        
                 messages.success(request, f"Başarıyla {eklenen} satır kaydedildi!")
                 return redirect('dashboard:products')
             except Exception as e:
+                print(f"Excel upload error: {e}")
+                messages.error(request, f"Excel yükleme hatası: {str(e)}")
+                return redirect('dashboard:finance')
                 messages.error(request, f"Dosya okunamadı: {str(e)}")
         else:
             messages.error(request, "Lütfen geçerli bir dosya seçin.")
@@ -2281,3 +2304,7 @@ def malzeme_excel_kaydet(request):
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'error': f'Sunucu hatası: {str(e)}'}, status=500)
+
+def health_check(request):
+    """Railway health check endpoint"""
+    return JsonResponse({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
