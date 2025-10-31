@@ -13,7 +13,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from .models import Siparis, UserProfile, Notification, Transaction, TransactionCategory, Event, MalzemeHareketi, MalzemeDosya
 from .forms import SiparisForm, TransactionForm, MalzemeExcelUploadForm
-import pandas as pd
+# pandas removed - using openpyxl instead
 from collections import defaultdict
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.dateparse import parse_date
@@ -2020,13 +2020,28 @@ def malzeme_excel_upload(request):
         if form.is_valid():
             excel_file = request.FILES['file']
             try:
-                df = pd.read_excel(excel_file)
+                from openpyxl import load_workbook
+                wb = load_workbook(excel_file)
+                ws = wb.active
+                
+                # Get headers from first row
+                headers = []
+                for cell in ws[1]:
+                    if cell.value:
+                        headers.append(str(cell.value).strip())
+                
                 eklenen = 0
-                for _, row in df.iterrows():
+                for row_num in range(2, ws.max_row + 1):
                     try:
-                        tarih = row.get('TARİH') or ''
-                        # str veya Timestamp olabilir
-                        if isinstance(tarih, pd.Timestamp):
+                        # Create row dict
+                        row_data = {}
+                        for col_num, header in enumerate(headers, 1):
+                            cell_value = ws.cell(row=row_num, column=col_num).value
+                            row_data[header] = cell_value
+                        
+                        tarih = row_data.get('TARİH') or ''
+                        # Handle different date formats
+                        if isinstance(tarih, datetime.datetime):
                             tarih = tarih.date()
                         elif isinstance(tarih, str) and '.' in tarih:
                             tarih = datetime.datetime.strptime(tarih, '%d.%m.%Y').date()
@@ -2035,15 +2050,15 @@ def malzeme_excel_upload(request):
                         else:
                             tarih = datetime.datetime.now().date()
 
-                        tutar = str(row.get('TUTAR') or '').replace('.', '').replace(',', '.')
+                        tutar = str(row_data.get('TUTAR') or '').replace('.', '').replace(',', '.')
                         tutar = float(tutar) if tutar else 0
                         hareket = MalzemeHareketi(
                             tarih = tarih,
-                            faturano = row.get('FATURA NO', ''),
-                            musteri = row.get('MÜŞTERİ', ''),
-                            urun = row.get('ÜRÜN', ''),
+                            faturano = row_data.get('FATURA NO', ''),
+                            musteri = row_data.get('MÜŞTERİ', ''),
+                            urun = row_data.get('ÜRÜN', ''),
                             tutar = tutar,
-                            odeme_sekli = row.get('ÖDEME ŞEKLİ', ''),
+                            odeme_sekli = row_data.get('ÖDEME ŞEKLİ', ''),
                             kullanici = request.user,
                         )
                         hareket.save()
