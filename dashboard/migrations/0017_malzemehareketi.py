@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('dashboard', '0016_add_event_model'),
+        ('dashboard', '0016_railway_fix'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
