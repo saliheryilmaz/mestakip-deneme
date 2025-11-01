@@ -24,11 +24,20 @@ class TransactionForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
+        # Kullanıcıyı al ve kwargs'dan çıkar
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        
         # Kategori1'i opsiyonel yap
         self.fields['kategori1'].required = False
         # Açıklama alanını opsiyonel yap
         self.fields['aciklama'].required = False
+        
+        # Kategori seçeneklerini kullanıcıya göre filtrele
+        if user:
+            self.fields['kategori1'].queryset = TransactionCategory.objects.filter(
+                created_by=user, parent=None
+            ).order_by('name')
 
     def clean(self):
         cleaned = super().clean()

@@ -114,12 +114,9 @@
                         <label class="form-label">Ana Kategori Seçin (Opsiyonel)</label>
                         <select class="form-select" name="ana_kategori" id="ana-kategori-select">
                             <option value="">Ana Kategori Seçiniz</option>
-                            <option value="3">Diğer Gelirler</option>
-                            <option value="6">Genel Giderler</option>
-                            <option value="2">Hizmet Gelirleri</option>
-                            <option value="4">Operasyonel Giderler</option>
-                            <option value="5">Personel Giderleri</option>
-                            <option value="1">Satış Gelirleri</option>
+                            {% for kategori in ana_kategoriler %}
+                            <option value="{{ kategori.id }}">{{ kategori.name }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-6">

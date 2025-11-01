@@ -67,17 +67,18 @@ def index(request):
         'colors': brand_colors[:len(brand_labels)]
     }
     
-    # Son eklenen işlemler (kullanıcının siparişlerinden son 5 kayıt)
-    son_islemler = Siparis.objects.filter(user=request.user).order_by('-olusturma_tarihi')[:5]
+    # Son eklenen işlemler (kullanıcının siparişlerinden son 5 kayıt - iptal edilenler hariç)
+    son_islemler = Siparis.objects.filter(user=request.user).exclude(durum='iptal').order_by('-olusturma_tarihi')[:5]
     
     # Son finance işlemleri (kullanıcının işlemlerinden son 5 kayıt)
     son_finance_islemleri = Transaction.objects.filter(created_by=request.user).order_by('-created_at')[:5]
     
-    # Gerçek istatistikler - sadece kullanıcının siparişleri
-    toplam_siparis = Siparis.objects.filter(user=request.user).count()
-    toplam_ciro = Siparis.objects.filter(user=request.user).aggregate(total=Sum('toplam_fiyat'))['total'] or 0
+    # Gerçek istatistikler - sadece kullanıcının siparişleri (iptal edilenler hariç)
+    aktif_siparisler = Siparis.objects.filter(user=request.user).exclude(durum='iptal')
+    toplam_siparis = aktif_siparisler.count()
+    toplam_ciro = aktif_siparisler.aggregate(total=Sum('toplam_fiyat'))['total'] or 0
     kontrol_edilen_siparis = kontrol_siparisler.count()
-    toplam_adet = Siparis.objects.filter(user=request.user).aggregate(total=Sum('adet'))['total'] or 0
+    toplam_adet = aktif_siparisler.aggregate(total=Sum('adet'))['total'] or 0
     
     # Aylık gelir/gider verileri (son 12 ay) - Transaction üzerinden (kullanıcıya göre)
     from datetime import datetime, timedelta
@@ -424,7 +425,7 @@ def products(request):
 @login_required
 def finance(request):
     """Gelir/Gider İşlemleri form sayfası"""
-    form = TransactionForm(request.POST or None)
+    form = TransactionForm(request.POST or None, user=request.user)
     if request.method == 'POST':
         if form.is_valid():
             tx = form.save(commit=False)
@@ -440,7 +441,7 @@ def finance(request):
             messages.error(request, 'Form hatası! Lütfen aşağıdaki hataları kontrol edin.')
             print("Form Errors:", form.errors)  # Debug için
 
-    ana_kategoriler = TransactionCategory.objects.filter(parent=None).order_by('name')
+    ana_kategoriler = TransactionCategory.objects.filter(parent=None, created_by=request.user).order_by('name')
     last_transactions = Transaction.objects.filter(created_by=request.user).order_by('-tarih', '-id')[:10]
     
     # Debug için
@@ -991,14 +992,15 @@ def messages_view(request):
     """Gelir/Gider Toplamları sayfası (kasa bazında ve genel toplam)."""
     qs = Transaction.objects.filter(created_by=request.user)
 
-    toplam_ifade = (F('nakit') + F('kredi_karti') + F('cari') + F('mehmet_havale'))
+    # Kasa bazında hesaplama için mehmet_havale'yi dahil etmiyoruz (ayrı hesaplanacak)
+    kasa_toplam_ifade = (F('nakit') + F('kredi_karti') + F('cari'))
 
-    # Kasa bazında gelir, gider ve net (gelir - gider)
+    # Kasa bazında gelir, gider ve net (gelir - gider) - mehmet_havale hariç
     kasa_ozet = (
         qs.values('kasa_adi')
         .annotate(
-            gelir=Sum(Case(When(hareket_tipi='gelir', then=toplam_ifade), default=0, output_field=DecimalField(max_digits=14, decimal_places=2))),
-            gider=Sum(Case(When(hareket_tipi='gider', then=toplam_ifade), default=0, output_field=DecimalField(max_digits=14, decimal_places=2)))
+            gelir=Sum(Case(When(hareket_tipi='gelir', then=kasa_toplam_ifade), default=0, output_field=DecimalField(max_digits=14, decimal_places=2))),
+            gider=Sum(Case(When(hareket_tipi='gider', then=kasa_toplam_ifade), default=0, output_field=DecimalField(max_digits=14, decimal_places=2)))
         )
         .annotate(net=F('gelir') - F('gider'))
         .order_by('kasa_adi')
@@ -1027,16 +1029,12 @@ def messages_view(request):
         elif kasa == 'mehmet-havale':
             mehmet_havale_toplam = net
 
-    # Ayrıca mehmet_havale field'ından da toplam hesapla
+    # Mehmet havale field'ından toplam hesapla (her zaman field bazında)
     mehmet_havale_field_toplam = qs.aggregate(
         mehmet_havale_gelir=Sum(Case(When(hareket_tipi='gelir', then='mehmet_havale'), default=0, output_field=DecimalField(max_digits=14, decimal_places=2))),
         mehmet_havale_gider=Sum(Case(When(hareket_tipi='gider', then='mehmet_havale'), default=0, output_field=DecimalField(max_digits=14, decimal_places=2)))
     )
-    
-    # Mehmet havale field toplamını da ekle
-    mehmet_havale_net = float((mehmet_havale_field_toplam['mehmet_havale_gelir'] or 0) - (mehmet_havale_field_toplam['mehmet_havale_gider'] or 0))
-    if mehmet_havale_toplam == 0:  # Eğer kasa olarak mehmet-havale yoksa field toplamını kullan
-        mehmet_havale_toplam = mehmet_havale_net
+    mehmet_havale_toplam = float((mehmet_havale_field_toplam['mehmet_havale_gelir'] or 0) - (mehmet_havale_field_toplam['mehmet_havale_gider'] or 0))
     
     # Ödeme yöntemlerine göre toplamlar (Detaylı İşlemler'den)
     # Gelir toplamları
@@ -1059,14 +1057,6 @@ def messages_view(request):
     
     # Nakit → Çanta'ya ekle
     canta_toplam += nakit_net
-    
-    # Kredi Kartı ve Cari için kasa adına göre dağıt (zaten çalışıyor)
-    # Mehmet Havale için hem kasa hem field toplamını kontrol et
-    if mehmet_havale_toplam == 0:
-        mehmet_havale_toplam = mehmet_havale_field_net
-    else:
-        # Hem kasa hem field varsa, field toplamını ekle
-        mehmet_havale_toplam += mehmet_havale_field_net
     
     # Genel toplamı güncelle (tüm kasaların toplamı)
     genel_toplam = sum([servis_toplam, merkez_satis_toplam, canta_toplam, mehmet_havale_toplam])
@@ -1294,9 +1284,9 @@ def kategoriler(request):
         
         return redirect('dashboard:kategoriler')
     
-    # Kategorileri hiyerarşik olarak getir
-    ana_kategoriler = TransactionCategory.objects.filter(parent=None).order_by('name')
-    alt_kategoriler = TransactionCategory.objects.filter(parent__isnull=False).order_by('name')
+    # Kategorileri hiyerarşik olarak getir (sadece kullanıcının kategorileri)
+    ana_kategoriler = TransactionCategory.objects.filter(parent=None, created_by=request.user).order_by('name')
+    alt_kategoriler = TransactionCategory.objects.filter(parent__isnull=False, created_by=request.user).order_by('name')
     
     # Hiyerarşik sıralama: Ana kategori -> Alt kategorileri -> Sonraki ana kategori
     tum_kategoriler = []
@@ -1304,7 +1294,7 @@ def kategoriler(request):
         # Ana kategoriyi ekle
         tum_kategoriler.append(ana_kategori)
         # Bu ana kategorinin alt kategorilerini ekle
-        alt_kategoriler_bu_ana = TransactionCategory.objects.filter(parent=ana_kategori).order_by('name')
+        alt_kategoriler_bu_ana = TransactionCategory.objects.filter(parent=ana_kategori, created_by=request.user).order_by('name')
         tum_kategoriler.extend(alt_kategoriler_bu_ana)
     
     # Tüm kullanıcıları getir (dropdown için)
@@ -2023,7 +2013,7 @@ def finance(request):
 def kategori_sil(request, kategori_id):
     """Kategori silme"""
     try:
-        kategori = get_object_or_404(TransactionCategory, id=kategori_id)
+        kategori = get_object_or_404(TransactionCategory, id=kategori_id, created_by=request.user)
         kategori_adi = kategori.name
         kategori.delete()
         messages.success(request, f'Kategori "{kategori_adi}" başarıyla silindi!')
@@ -2035,7 +2025,7 @@ def kategori_sil(request, kategori_id):
 @login_required
 def kategori_duzenle(request, kategori_id):
     """Kategori düzenleme"""
-    kategori = get_object_or_404(TransactionCategory, id=kategori_id)
+    kategori = get_object_or_404(TransactionCategory, id=kategori_id, created_by=request.user)
     
     if request.method == 'POST':
         kategori_adi = request.POST.get('kategori_adi')
@@ -2047,7 +2037,7 @@ def kategori_duzenle(request, kategori_id):
             parent = None
             if parent_id:
                 try:
-                    parent = TransactionCategory.objects.get(id=parent_id)
+                    parent = TransactionCategory.objects.get(id=parent_id, created_by=request.user)
                     # Kendi kendisinin alt kategorisi olamaz
                     if parent.id == kategori.id:
                         messages.error(request, 'Kategori kendi kendisinin alt kategorisi olamaz!')
@@ -2079,8 +2069,8 @@ def kategori_duzenle(request, kategori_id):
 def get_alt_kategoriler(request, ana_kategori_id):
     """Ana kategoriye ait alt kategorileri JSON olarak döndür"""
     try:
-        ana_kategori = get_object_or_404(TransactionCategory, id=ana_kategori_id, parent=None)
-        alt_kategoriler = ana_kategori.children.all().order_by('name')
+        ana_kategori = get_object_or_404(TransactionCategory, id=ana_kategori_id, parent=None, created_by=request.user)
+        alt_kategoriler = ana_kategori.children.filter(created_by=request.user).order_by('name')
         
         data = []
         for alt_kategori in alt_kategoriler:

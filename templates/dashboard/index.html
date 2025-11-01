@@ -498,8 +498,36 @@
     const originalChartConstructor = window.Chart;
     if (originalChartConstructor) {
         window.Chart = function (ctx, config) {
+            // Block demo charts on revenueChart canvas with Revenue/Profit labels
+            if (ctx && (ctx.id === 'revenueChart' || (ctx.canvas && ctx.canvas.id === 'revenueChart'))) {
+                // Check if this is a demo chart (has Revenue/Profit instead of Gelir/Gider)
+                if (config && config.data && config.data.datasets) {
+                    const datasets = config.data.datasets;
+                    const isDemoChart = datasets.some(ds => {
+                        const label = ds.label || '';
+                        return label === 'Revenue' || label === 'Profit' || 
+                               (label.includes('Revenue') && !label.includes('Gelir')) ||
+                               (label.includes('Profit') && !label.includes('Gider'));
+                    });
+
+                    if (isDemoChart) {
+                        console.log('🚫 BLOCKED DEMO REVENUE CHART CREATION:', datasets.map(ds => ds.label));
+                        // Clear the canvas immediately
+                        const canvas = ctx.canvas || ctx;
+                        const context = canvas.getContext('2d');
+                        context.clearRect(0, 0, canvas.width, canvas.height);
+
+                        return {
+                            destroy: function () { },
+                            update: function () { },
+                            data: { labels: [], datasets: [] }
+                        };
+                    }
+                }
+            }
+            
             // Block demo charts on orderStatusChart canvas
-            if (ctx && ctx.id === 'orderStatusChart') {
+            if (ctx && (ctx.id === 'orderStatusChart' || (ctx.canvas && ctx.canvas.id === 'orderStatusChart'))) {
                 // Check if this is a demo chart (has demo data)
                 if (config && config.data && config.data.labels) {
                     const labels = config.data.labels;
@@ -515,7 +543,7 @@
                     if (isDemoChart) {
                         console.log('🚫 BLOCKED DEMO CHART CREATION:', labels);
                         // Clear the canvas immediately
-                        const canvas = ctx;
+                        const canvas = ctx.canvas || ctx;
                         const context = canvas.getContext('2d');
                         context.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -561,8 +589,63 @@
         }
     });
 
+    // DEMO CHART COMPLETELY BLOCKED - Override DashboardManager
+    if (window.DashboardManager) {
+        const OriginalDashboardManager = window.DashboardManager;
+        window.DashboardManager = class extends OriginalDashboardManager {
+            initRevenueChart() {
+                console.log('🚫 Demo revenue chart blocked - using real data only');
+                return; // Completely block demo chart
+            }
+        };
+    }
+
+    // Also block if imported as module
     document.addEventListener('DOMContentLoaded', function () {
         console.log('Dashboard loaded');
+
+        // Block demo dashboardManager if exists
+        if (window.dashboardManager) {
+            const originalInitRevenueChart = window.dashboardManager.initRevenueChart;
+            window.dashboardManager.initRevenueChart = function() {
+                console.log('🚫 Demo revenue chart blocked');
+                return;
+            };
+            // Destroy any existing demo chart
+            if (window.dashboardManager.charts && window.dashboardManager.charts.has('revenue')) {
+                try {
+                    const demoChart = window.dashboardManager.charts.get('revenue');
+                    if (demoChart && typeof demoChart.destroy === 'function') {
+                        demoChart.destroy();
+                    }
+                    window.dashboardManager.charts.delete('revenue');
+                } catch (e) {
+                    console.log('Demo chart cleanup error (ignored):', e);
+                }
+            }
+        }
+        
+        // Clear any demo chart on revenueChart canvas before creating real one
+        const revenueCanvas = document.getElementById('revenueChart');
+        if (revenueCanvas) {
+            // Get all Chart.js instances on this canvas and destroy demo ones
+            const chartInstances = Chart.getChart(revenueCanvas);
+            if (chartInstances) {
+                const chartData = chartInstances.data;
+                if (chartData && chartData.datasets) {
+                    const hasDemoData = chartData.datasets.some(ds => {
+                        const label = ds.label || '';
+                        return label === 'Revenue' || label === 'Profit';
+                    });
+                    if (hasDemoData) {
+                        console.log('🚫 Destroying demo chart instance');
+                        chartInstances.destroy();
+                        const ctx = revenueCanvas.getContext('2d');
+                        ctx.clearRect(0, 0, revenueCanvas.width, revenueCanvas.height);
+                    }
+                }
+            }
+        }
 
         // Revenue Chart (live via API) - create after data to avoid hover glitches
         const revenueCtx = document.getElementById('revenueChart');
@@ -617,7 +700,24 @@
                                 animations: false,
                                 plugins: {
                                     legend: { display: true, position: 'top' },
-                                    tooltip: { enabled: true }
+                                    tooltip: { 
+                                        enabled: true,
+                                        filter: function(tooltipItem) {
+                                            // Only show tooltip for Gelir and Gider datasets (not Revenue/Profit)
+                                            const label = tooltipItem.dataset.label || '';
+                                            return label === 'Gelir (₺)' || label === 'Gider (₺)';
+                                        },
+                                        callbacks: {
+                                            label: function(context) {
+                                                // Only show real data tooltips
+                                                const label = context.dataset.label || '';
+                                                if (label === 'Gelir (₺)' || label === 'Gider (₺)') {
+                                                    return `${label}: ₺${context.parsed.y.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                                }
+                                                return '';
+                                            }
+                                        }
+                                    }
                                 },
                                 scales: {
                                     y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.1)' } },
