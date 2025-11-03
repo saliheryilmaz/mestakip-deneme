@@ -409,14 +409,14 @@ class Transaction(models.Model):
         ('gider', 'Gider'),
     ]
     KASA_CHOICES = [
-        ('merkez-satis', 'Merkez Satış'),
         ('servis', 'Servis'),
+        ('merkez-satis', 'Merkez Satış'),
     ]
 
     hareket_tipi = models.CharField(max_length=10, choices=TYPE_CHOICES, default='gelir', verbose_name="Hareket Tipi")
     tarih = models.DateField(default=timezone.now, verbose_name="Tarih")
 
-    kasa_adi = models.CharField(max_length=20, choices=KASA_CHOICES, default='merkez-satis', verbose_name="Kasa Adı")
+    kasa_adi = models.CharField(max_length=20, choices=KASA_CHOICES, default='servis', verbose_name="Kasa Adı")
     nakit = models.DecimalField(max_digits=12, decimal_places=2, default=0, validators=[MinValueValidator(0)], verbose_name="Nakit")
     kredi_karti = models.DecimalField(max_digits=12, decimal_places=2, default=0, validators=[MinValueValidator(0)], verbose_name="Kredi Kartı")
     cari = models.DecimalField(max_digits=12, decimal_places=2, default=0, validators=[MinValueValidator(0)], verbose_name="Cari")

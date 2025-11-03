@@ -858,14 +858,25 @@ def siparis_whatsapp(request, siparis_id):
     """WhatsApp mesajı gönder"""
     siparis = get_object_or_404(Siparis, id=siparis_id, user=request.user)
     
+    # Tarih formatlama - timezone-aware kontrolü
+    guncelleme_tarihi = siparis.guncelleme_tarihi
+    if timezone.is_naive(guncelleme_tarihi):
+        # Naive datetime ise timezone-aware yap
+        guncelleme_tarihi = timezone.make_aware(guncelleme_tarihi)
+    tarih_str = timezone.localtime(guncelleme_tarihi).strftime('%d.%m.%Y %H:%M')
+    
     # WhatsApp mesajı oluştur
-    mesaj = f"""*Lastik Envanteri - {siparis.cari_firma}*
+    mesaj = f"""*MesTakip - {siparis.cari_firma}*
 
 *Ürün:* {siparis.urun}
 *Marka:* {siparis.marka}
 *Adet:* {siparis.adet}
 *Durum:* {siparis.get_durum_display()}
-*Güncellenen Son Tarih:* {timezone.localtime(siparis.guncelleme_tarihi).strftime('%d.%m.%Y %H:%M')}"""
+*Güncellenen Son Tarih:* {tarih_str}"""
+    
+    # SMS durumunu "gönderildi" olarak güncelle
+    siparis.sms_durum = 'gonderildi'
+    siparis.save()
     
     # WhatsApp URL'si oluştur (telefon numarası placeholder)
     encoded_mesaj = mesaj.replace(' ', '%20').replace('\n', '%0A')

@@ -117,21 +117,33 @@
     </div>
 </div>
 
-<!-- Chart Section -->
+<!-- Finance Chart Section -->
 <div class="row g-4 mb-4">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Gelire Genel Bakış (Aylık Gelir/Gider)</h5>
-                <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-outline-primary active" data-chart-period="7d">7D</button>
-                    <button type="button" class="btn btn-outline-primary" data-chart-period="30d">30D</button>
-                    <button type="button" class="btn btn-outline-primary" data-chart-period="90d">90D</button>
-                    <button type="button" class="btn btn-outline-primary" data-chart-period="1y">1Y</button>
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-1">
+                            <i class="bi bi-graph-up-arrow text-primary me-2"></i>
+                            Aylık Gelir & Gider Analizi
+                        </h5>
+                        <small class="text-muted">Son 12 ayın finansal özeti</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-success-subtle text-success">
+                            <i class="bi bi-arrow-up-circle me-1"></i>Gelir
+                        </span>
+                        <span class="badge bg-danger-subtle text-danger">
+                            <i class="bi bi-arrow-down-circle me-1"></i>Gider
+                        </span>
+                    </div>
                 </div>
             </div>
-            <div class="card-body">
-                <canvas id="revenueChart" height="250"></canvas>
+            <div class="card-body p-4">
+                <div class="chart-container" style="position: relative; height: 350px;">
+                    <canvas id="financeOverviewChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -504,18 +516,26 @@
                 if (config && config.data && config.data.datasets) {
                     const datasets = config.data.datasets;
                     const isDemoChart = datasets.some(ds => {
-                        const label = ds.label || '';
-                        return label === 'Revenue' || label === 'Profit' || 
-                               (label.includes('Revenue') && !label.includes('Gelir')) ||
-                               (label.includes('Profit') && !label.includes('Gider'));
+                        const label = (ds.label || '').toLowerCase();
+                        return (label === 'revenue' || label === 'profit') && 
+                               !label.includes('gelir') && !label.includes('gider');
                     });
 
                     if (isDemoChart) {
                         console.log('🚫 BLOCKED DEMO REVENUE CHART CREATION:', datasets.map(ds => ds.label));
                         // Clear the canvas immediately
                         const canvas = ctx.canvas || ctx;
-                        const context = canvas.getContext('2d');
-                        context.clearRect(0, 0, canvas.width, canvas.height);
+                        if (canvas && canvas.getContext) {
+                            const context = canvas.getContext('2d');
+                            context.clearRect(0, 0, canvas.width || 800, canvas.height || 400);
+                        }
+                        // Also destroy any existing chart on this canvas
+                        try {
+                            const existing = originalChartConstructor.getChart(ctx.canvas || ctx);
+                            if (existing) {
+                                existing.destroy();
+                            }
+                        } catch (e) {}
 
                         return {
                             destroy: function () { },
@@ -625,119 +645,245 @@
             }
         }
         
-        // Clear any demo chart on revenueChart canvas before creating real one
-        const revenueCanvas = document.getElementById('revenueChart');
-        if (revenueCanvas) {
-            // Get all Chart.js instances on this canvas and destroy demo ones
-            const chartInstances = Chart.getChart(revenueCanvas);
-            if (chartInstances) {
-                const chartData = chartInstances.data;
-                if (chartData && chartData.datasets) {
-                    const hasDemoData = chartData.datasets.some(ds => {
-                        const label = ds.label || '';
-                        return label === 'Revenue' || label === 'Profit';
-                    });
-                    if (hasDemoData) {
-                        console.log('🚫 Destroying demo chart instance');
-                        chartInstances.destroy();
-                        const ctx = revenueCanvas.getContext('2d');
-                        ctx.clearRect(0, 0, revenueCanvas.width, revenueCanvas.height);
-                    }
-                }
+
+        // Modern Finance Overview Chart - Canlı veri çeken güzel chart
+        const financeChartCanvas = document.getElementById('financeOverviewChart');
+        if (financeChartCanvas) {
+            let financeChart = null;
+
+            // Gradient oluşturma fonksiyonu
+            function createGradient(ctx, color1, color2) {
+                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, color1);
+                gradient.addColorStop(1, color2);
+                return gradient;
             }
-        }
-
-        // Revenue Chart (live via API) - create after data to avoid hover glitches
-        const revenueCtx = document.getElementById('revenueChart');
-        if (revenueCtx) {
-            try {
-                if (window.dashboardManager && window.dashboardManager.charts && typeof window.dashboardManager.charts.delete === 'function') {
-                    window.dashboardManager.charts.delete('revenue');
-                }
-            } catch (e) { }
-
-            let revenueChart = null;
 
             async function loadFinanceOverview() {
                 try {
-                    const res = await fetch('/dashboard/api/finance/overview/');
-                    const data = await res.json();
-                    if (!data.success) return;
+                    const response = await fetch('/dashboard/api/finance/overview/');
+                    if (!response.ok) throw new Error('API yanıtı alınamadı');
+                    
+                    const data = await response.json();
+                    if (!data.success) {
+                        console.error('API hatası:', data.error || 'Bilinmeyen hata');
+                        showError();
+                        return;
+                    }
 
-                    if (!revenueChart) {
-                        revenueChart = new Chart(revenueCtx, {
-                            type: 'line',
-                            data: {
-                                labels: data.labels,
-                                datasets: [
-                                    {
-                                        label: 'Gelir (₺)',
-                                        data: data.income,
-                                        borderColor: '#16a34a',
-                                        backgroundColor: 'rgba(22, 163, 74, 0.15)',
-                                        borderWidth: 3,
-                                        fill: true,
-                                        tension: 0.4,
-                                        pointRadius: 3
-                                    },
-                                    {
-                                        label: 'Gider (₺)',
-                                        data: data.expense,
-                                        borderColor: '#ef4444',
-                                        backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                                        borderWidth: 3,
-                                        fill: true,
-                                        tension: 0.4,
-                                        pointRadius: 3
-                                    }
-                                ]
+                    const { labels, income, expense } = data;
+
+                    // Net kar hesapla (Gelir - Gider)
+                    const netProfit = income.map((val, idx) => val - expense[idx]);
+
+                    // Mevcut chart varsa yok et
+                    if (financeChart) {
+                        financeChart.destroy();
+                    }
+
+                    const ctx = financeChartCanvas.getContext('2d');
+                    
+                    // Gradyanlar oluştur
+                    const incomeGradient = createGradient(ctx, 'rgba(34, 197, 94, 0.3)', 'rgba(34, 197, 94, 0.05)');
+                    const expenseGradient = createGradient(ctx, 'rgba(239, 68, 68, 0.3)', 'rgba(239, 68, 68, 0.05)');
+
+                    // Yeni chart oluştur
+                    financeChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Gelir',
+                                    data: income,
+                                    borderColor: 'rgb(34, 197, 94)',
+                                    backgroundColor: incomeGradient,
+                                    borderWidth: 3,
+                                    fill: true,
+                                    tension: 0.5,
+                                    pointRadius: 5,
+                                    pointHoverRadius: 8,
+                                    pointBackgroundColor: '#fff',
+                                    pointBorderColor: 'rgb(34, 197, 94)',
+                                    pointBorderWidth: 3,
+                                    pointHoverBackgroundColor: 'rgb(34, 197, 94)',
+                                    pointHoverBorderColor: '#fff',
+                                    pointHoverBorderWidth: 3,
+                                    cubicInterpolationMode: 'monotone'
+                                },
+                                {
+                                    label: 'Gider',
+                                    data: expense,
+                                    borderColor: 'rgb(239, 68, 68)',
+                                    backgroundColor: expenseGradient,
+                                    borderWidth: 3,
+                                    fill: true,
+                                    tension: 0.5,
+                                    pointRadius: 5,
+                                    pointHoverRadius: 8,
+                                    pointBackgroundColor: '#fff',
+                                    pointBorderColor: 'rgb(239, 68, 68)',
+                                    pointBorderWidth: 3,
+                                    pointHoverBackgroundColor: 'rgb(239, 68, 68)',
+                                    pointHoverBorderColor: '#fff',
+                                    pointHoverBorderWidth: 3,
+                                    cubicInterpolationMode: 'monotone'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
                             },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                interaction: { mode: 'nearest', intersect: false },
-                                hover: { mode: 'nearest', intersect: false },
-                                animations: false,
-                                plugins: {
-                                    legend: { display: true, position: 'top' },
-                                    tooltip: { 
-                                        enabled: true,
-                                        filter: function(tooltipItem) {
-                                            // Only show tooltip for Gelir and Gider datasets (not Revenue/Profit)
-                                            const label = tooltipItem.dataset.label || '';
-                                            return label === 'Gelir (₺)' || label === 'Gider (₺)';
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top',
+                                    align: 'end',
+                                    labels: {
+                                        usePointStyle: true,
+                                        padding: 20,
+                                        font: {
+                                            size: 13,
+                                            weight: '500',
+                                            family: "'Inter', sans-serif"
                                         },
-                                        callbacks: {
-                                            label: function(context) {
-                                                // Only show real data tooltips
-                                                const label = context.dataset.label || '';
-                                                if (label === 'Gelir (₺)' || label === 'Gider (₺)') {
-                                                    return `${label}: ₺${context.parsed.y.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                        generateLabels: function(chart) {
+                                            const original = Chart.defaults.plugins.legend.labels.generateLabels;
+                                            const labels = original(chart);
+                                            labels.forEach(label => {
+                                                if (label.text === 'Gelir') {
+                                                    label.fillStyle = 'rgb(34, 197, 94)';
+                                                } else if (label.text === 'Gider') {
+                                                    label.fillStyle = 'rgb(239, 68, 68)';
                                                 }
-                                                return '';
-                                            }
+                                            });
+                                            return labels;
                                         }
                                     }
                                 },
-                                scales: {
-                                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.1)' } },
-                                    x: { grid: { display: false } }
+                                tooltip: {
+                                    enabled: true,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: '600'
+                                    },
+                                    bodyFont: {
+                                        size: 13
+                                    },
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1,
+                                    cornerRadius: 8,
+                                    displayColors: true,
+                                    callbacks: {
+                                        title: function(context) {
+                                            return context[0].label;
+                                        },
+                                        label: function(context) {
+                                            const value = context.parsed.y;
+                                            const label = context.dataset.label;
+                                            const symbol = label === 'Gelir' ? '↑' : '↓';
+                                            return `${symbol} ${label}: ₺${value.toLocaleString('tr-TR', { 
+                                                minimumFractionDigits: 0, 
+                                                maximumFractionDigits: 0 
+                                            })}`;
+                                        },
+                                        footer: function(tooltipItems) {
+                                            if (tooltipItems.length === 2) {
+                                                const gelir = tooltipItems[0].parsed.y;
+                                                const gider = tooltipItems[1].parsed.y;
+                                                const net = gelir - gider;
+                                                const netColor = net >= 0 ? '#22c55e' : '#ef4444';
+                                                return `────────────────\nNet: ₺${net.toLocaleString('tr-TR', { 
+                                                    minimumFractionDigits: 0, 
+                                                    maximumFractionDigits: 0 
+                                                })}`;
+                                            }
+                                            return '';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.05)',
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        callback: function(value) {
+                                            if (value >= 1000000) {
+                                                return '₺' + (value / 1000000).toFixed(1) + 'M';
+                                            } else if (value >= 1000) {
+                                                return '₺' + (value / 1000).toFixed(0) + 'K';
+                                            }
+                                            return '₺' + value.toLocaleString('tr-TR');
+                                        },
+                                        font: {
+                                            size: 11,
+                                            family: "'Inter', sans-serif"
+                                        },
+                                        color: '#6b7280',
+                                        padding: 8
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false,
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        font: {
+                                            size: 11,
+                                            family: "'Inter', sans-serif"
+                                        },
+                                        color: '#6b7280',
+                                        padding: 10
+                                    }
+                                }
+                            },
+                            animation: {
+                                duration: 1000,
+                                easing: 'easeInOutQuart'
+                            },
+                            elements: {
+                                point: {
+                                    hoverRadius: 8
                                 }
                             }
-                        });
-                    } else {
-                        revenueChart.data.labels = data.labels;
-                        revenueChart.data.datasets[0].data = data.income;
-                        revenueChart.data.datasets[1].data = data.expense;
-                        revenueChart.update('none');
-                    }
-                } catch (e) {
-                    console.error('Finance overview load error', e);
+                        }
+                    });
+
+                } catch (error) {
+                    console.error('Finans verisi yüklenirken hata:', error);
+                    showError();
                 }
             }
 
-            // initial load and periodic refresh each 60s
+            function showError() {
+                if (financeChartCanvas) {
+                    const ctx = financeChartCanvas.getContext('2d');
+                    ctx.clearRect(0, 0, financeChartCanvas.width, financeChartCanvas.height);
+                    ctx.fillStyle = '#9ca3af';
+                    ctx.font = 'bold 16px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('Veri yüklenemedi', financeChartCanvas.width / 2, financeChartCanvas.height / 2 - 10);
+                    ctx.font = '14px Inter, sans-serif';
+                    ctx.fillText('Lütfen sayfayı yenileyin', financeChartCanvas.width / 2, financeChartCanvas.height / 2 + 15);
+                }
+            }
+
+            // İlk yükleme
             loadFinanceOverview();
+
+            // Her 60 saniyede bir otomatik güncelle
             setInterval(loadFinanceOverview, 60000);
         }
 
@@ -1063,19 +1209,6 @@
             });
         }
 
-        // Chart period buttons functionality
-        const periodButtons = document.querySelectorAll('[data-chart-period]');
-        periodButtons.forEach(button => {
-            button.addEventListener('click', function () {
-                // Remove active class from all buttons
-                periodButtons.forEach(btn => btn.classList.remove('active'));
-                // Add active class to clicked button
-                this.classList.add('active');
-
-                // Here you would typically update the chart data based on the selected period
-                console.log('Selected period:', this.dataset.chartPeriod);
-            });
-        });
     });
 </script>
 {% endblock %}

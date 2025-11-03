@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 from .models import Transaction, TransactionCategory
 from .models import Siparis
 from .models import MalzemeHareketi
@@ -32,6 +33,15 @@ class TransactionForm(forms.ModelForm):
         self.fields['kategori1'].required = False
         # Açıklama alanını opsiyonel yap
         self.fields['aciklama'].required = False
+        
+        # Eğer yeni form ise (instance yoksa) tarihi bugünün tarihi olarak ayarla
+        try:
+            # Eğer instance yoksa veya pk yoksa (yeni kayıt) bugünün tarihini ayarla
+            if not hasattr(self.instance, 'pk') or self.instance.pk is None:
+                self.fields['tarih'].initial = timezone.now().date()
+        except AttributeError:
+            # Instance yoksa direkt bugünün tarihini ayarla
+            self.fields['tarih'].initial = timezone.now().date()
         
         # Kategori seçeneklerini kullanıcıya göre filtrele
         if user:

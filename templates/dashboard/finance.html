@@ -179,6 +179,20 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Tarih alanını otomatik olarak bugünün tarihi ile doldur
+        const tarihInput = document.querySelector('input[name="tarih"]');
+        if (tarihInput) {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+            // Eğer tarih boşsa veya değer yoksa bugünün tarihini ayarla
+            if (!tarihInput.value || tarihInput.value === '') {
+                tarihInput.value = todayStr;
+            }
+        }
+
         const tableContainer = document.getElementById('excel-table-container');
         const fileInput = document.getElementById('excelFileInput');
         const saveBtn = document.getElementById('btn-excel-save');
