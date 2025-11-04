@@ -13,7 +13,7 @@
         <small class="text-info">
             <i class="bi bi-info-circle me-1"></i>
             Mevcut Rol: <strong>
-                {% if user_profile.role == 'admin' %}
+                {% if user.is_superuser or user.is_staff or user_profile.role == 'admin' %}
                     Admin
                 {% else %}
                     Yönetici
@@ -69,7 +69,7 @@
                                 <td>{{ user.first_name }} {{ user.last_name }}</td>
                                 <td>{{ user.email|default:"-" }}</td>
                                 <td>
-                                    {% if user.userprofile.role == 'admin' %}
+                                    {% if user.is_superuser or user.is_staff or user.userprofile.role == 'admin' %}
                                         <span class="badge bg-danger">Admin</span>
                                     {% else %}
                                         <span class="badge bg-info">Yönetici</span>

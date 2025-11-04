@@ -184,8 +184,8 @@ def users(request):
         else:
             user_profile = UserProfile.objects.create(user=request.user, role='yonetici')
     
-    # Admin kontrolü
-    is_admin = user_profile.is_admin()
+    # Admin kontrolü (Django bayrakları ile uyumlu)
+    is_admin = user_profile.is_admin() or request.user.is_superuser or request.user.is_staff
     
     # Kullanıcı listesi - sadece admin görebilir
     users_list = []

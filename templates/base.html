@@ -575,7 +575,7 @@
                                         {{ user.username }}
                                         {% endif %}
                                         <br><small class="text-muted">
-                                            {% if user.userprofile.role == 'admin' %}
+                                            {% if user.is_superuser or user.is_staff or user.userprofile.role == 'admin' %}
                                             <span class="badge bg-danger">Admin</span>
                                             {% else %}
                                             <span class="badge bg-info">Yönetici</span>
