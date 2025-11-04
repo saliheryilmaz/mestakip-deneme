@@ -273,6 +273,7 @@ class Notification(models.Model):
     TYPE_CHOICES = [
         ('event_reminder', 'Etkinlik Hatırlatıcısı'),
         ('event_start', 'Etkinlik Başlangıcı'),
+        ('event_created', 'Etkinlik Oluşturuldu'),
         ('system', 'Sistem Bildirimi'),
         ('info', 'Bilgi'),
         ('warning', 'Uyarı'),
@@ -323,6 +324,7 @@ class Notification(models.Model):
         icons = {
             'event_reminder': 'bi-bell',
             'event_start': 'bi-calendar-event',
+            'event_created': 'bi-calendar-check',
             'system': 'bi-gear',
             'info': 'bi-info-circle',
             'warning': 'bi-exclamation-triangle',
@@ -335,6 +337,7 @@ class Notification(models.Model):
         colors = {
             'event_reminder': '#3b82f6',
             'event_start': '#10b981',
+            'event_created': '#8b5cf6',
             'system': '#6b7280',
             'info': '#06b6d4',
             'warning': '#f59e0b',

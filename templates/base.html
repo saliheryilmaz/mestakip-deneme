@@ -1278,7 +1278,7 @@
             constructor() {
                 this.notifications = [];
                 this.unreadCount = 0;
-                this.checkInterval = 30000; // 30 saniye
+                this.checkInterval = 5000; // 5 saniye - hatırlatıcılar için daha sık kontrol (daha hassas)
                 this.init();
             }
 
@@ -1306,9 +1306,42 @@
                     const data = await response.json();
 
                     if (data.success) {
-                        this.notifications = data.notifications;
+                        // Önceki bildirimlerin "shown" durumunu koru
+                        const previousNotifications = this.notifications.reduce((acc, notif) => {
+                            acc[notif.id] = notif.shown || false;
+                            return acc;
+                        }, {});
+                        
+                        const oldNotificationIds = new Set(this.notifications.map(n => n.id));
+                        const newNotifications = data.notifications.map(notif => ({
+                            ...notif,
+                            shown: previousNotifications[notif.id] || false
+                        }));
+                        
+                        // Yeni eklenen bildirimleri kontrol et
+                        const newlyAdded = newNotifications.filter(n => !oldNotificationIds.has(n.id));
+                        
+                        this.notifications = newNotifications;
                         this.unreadCount = data.unread_count;
                         this.updateUI();
+                        
+                        // Yeni eklenen event_created bildirimlerini hemen göster
+                        newlyAdded.forEach(notification => {
+                            if (notification.type === 'event_created' && notification.status === 'sent') {
+                                console.log('🎉 Yeni etkinlik bildirimi bulundu:', notification.title);
+                                // Hemen göster
+                                setTimeout(() => {
+                                    this.showToast(
+                                        `${notification.title}\n${notification.message}`,
+                                        'info'
+                                    );
+                                    notification.shown = true;
+                                }, 100);
+                            }
+                        });
+                        
+                        // Yeni yüklenen bildirimlerde hatırlatıcıları kontrol et
+                        this.checkReminders();
                     }
                 } catch (error) {
                     console.error('Bildirimler yüklenirken hata:', error);
@@ -1445,9 +1478,130 @@
             }
 
             startPeriodicCheck() {
+                // İlk kontrolü hemen yap (sayfa yüklendiğinde)
+                console.log('🔔 Bildirim kontrol sistemi başlatıldı');
+                this.checkReminders();
+                
+                // Periyodik olarak bildirimleri yükle ve hatırlatıcıları kontrol et
                 setInterval(() => {
                     this.loadNotifications();
+                    this.checkReminders();
                 }, this.checkInterval);
+                
+                // Her 1 dakikada bir detaylı log (debug için)
+                setInterval(() => {
+                    const pendingReminders = this.notifications.filter(n => 
+                        (n.type === 'event_reminder' || n.type === 'event_start') && 
+                        (n.status === 'pending' || n.status === 'sent') && 
+                        !n.shown
+                    );
+                    if (pendingReminders.length > 0) {
+                        console.log(`📋 Bekleyen hatırlatıcılar: ${pendingReminders.length}`, pendingReminders.map(n => ({
+                            title: n.title,
+                            time: n.scheduled_time,
+                            type: n.type
+                        })));
+                    }
+                }, 60000); // Her 1 dakikada bir
+            }
+
+            checkReminders() {
+                // Zamanı gelmiş bekleyen hatırlatıcıları kontrol et
+                const now = new Date();
+                let hasNewReminders = false;
+                
+                this.notifications.forEach(notification => {
+                    // Tüm bildirim tiplerini kontrol et (event_reminder, event_start, event_created)
+                    const isEventNotification = notification.type === 'event_reminder' || 
+                                                  notification.type === 'event_start' || 
+                                                  notification.type === 'event_created';
+                    
+                    if ((notification.status === 'pending' || notification.status === 'sent') && 
+                        isEventNotification) {
+                        
+                        const scheduledTime = new Date(notification.scheduled_time);
+                        
+                        // Zamanı gelmiş mi kontrol et (daha geniş tolerans)
+                        const timeDiff = now - scheduledTime;
+                        const minutesDiff = timeDiff / (1000 * 60);
+                        
+                        // event_created için hemen göster, diğerleri için zamanı gelmiş olmalı
+                        const shouldShow = notification.type === 'event_created' 
+                            ? (minutesDiff >= -5 && minutesDiff <= 60 && !notification.shown) // event_created için 5 dakika öncesinden 1 saat sonrasına kadar
+                            : (minutesDiff >= -2 && minutesDiff <= 10 && !notification.shown); // Hatırlatıcılar için 2 dakika öncesinden 10 dakika sonrasına kadar
+                        
+                        if (shouldShow) {
+                            console.log('🔔 Hatırlatıcı gösteriliyor:', notification.title, 'Zaman farkı:', minutesDiff.toFixed(1), 'dakika');
+                            
+                            // Sağ üstten alert göster - mesajı da göster
+                            const alertMessage = `${notification.title}\n${notification.message}`;
+                            const alertType = notification.type === 'event_start' ? 'success' : 
+                                             notification.type === 'event_created' ? 'info' : 'info';
+                            
+                            // Daha uzun süre göster (hatırlatıcılar için)
+                            this.showToast(alertMessage, alertType);
+                            
+                            // Tarayıcı bildirimi göster (izin varsa)
+                            if ('Notification' in window) {
+                                if (Notification.permission === 'granted') {
+                                    try {
+                                        const browserNotification = new Notification(notification.title, {
+                                            body: notification.message,
+                                            icon: '/static/images/logo.svg',
+                                            badge: '/static/images/logo.svg',
+                                            tag: `notification-${notification.id}`,
+                                            requireInteraction: notification.type === 'event_start', // Etkinlik başlangıcı için daha uzun göster
+                                            silent: false
+                                        });
+                                        
+                                        // Bildirim kapandığında veya tıklandığında
+                                        browserNotification.onclick = function() {
+                                            window.focus();
+                                            this.close();
+                                        };
+                                    } catch (error) {
+                                        console.error('Tarayıcı bildirimi gösterilirken hata:', error);
+                                    }
+                                } else if (Notification.permission === 'default') {
+                                    // İzin iste
+                                    Notification.requestPermission().then(permission => {
+                                        if (permission === 'granted') {
+                                            console.log('✅ Tarayıcı bildirim izni verildi');
+                                        }
+                                    });
+                                }
+                            }
+                            
+                            // Bildirimi "gösterildi" olarak işaretle (tekrar göstermemek için)
+                            notification.shown = true;
+                            hasNewReminders = true;
+                            
+                            // Backend'e bildirimi "sent" olarak işaretle
+                            this.markNotificationAsSent(notification.id);
+                        }
+                    }
+                });
+                
+                // Yeni hatırlatıcılar varsa UI'ı güncelle
+                if (hasNewReminders) {
+                    this.updateUI();
+                }
+            }
+
+            async markNotificationAsSent(notificationId) {
+                try {
+                    // Backend'e bildirim gönderildi olarak işaretleme isteği gönder
+                    // Bu opsiyonel, eğer backend'de otomatik olarak yapılıyorsa gerek yok
+                    await fetch(`/dashboard/api/notifications/${notificationId}/mark-sent/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': this.getCSRFToken(),
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                } catch (error) {
+                    console.error('Bildirim gönderildi olarak işaretlenirken hata:', error);
+                }
             }
 
             getTimeAgo(dateString) {
@@ -1486,14 +1640,56 @@
             showToast(message, type = 'info') {
                 // SweetAlert2 kullanarak toast göster
                 if (typeof Swal !== 'undefined') {
+                    // Çok satırlı mesajları title ve text olarak ayır
+                    let title = message;
+                    let text = '';
+                    
+                    if (message.includes('\n')) {
+                        const parts = message.split('\n');
+                        title = parts[0];
+                        text = parts.slice(1).join('\n');
+                    }
+                    
+                    // Hatırlatıcılar için daha uzun süre göster
+                    const timer = type === 'success' ? 6000 : type === 'info' ? 8000 : 5000;
+                    
                     Swal.fire({
-                        title: message,
-                        icon: type === 'success' ? 'success' : type === 'error' ? 'error' : 'info',
+                        title: title,
+                        text: text || undefined,
+                        icon: type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info',
                         toast: true,
                         position: 'top-end',
                         showConfirmButton: false,
-                        timer: 3000,
-                        timerProgressBar: true
+                        timer: timer,
+                        timerProgressBar: true,
+                        width: 'auto',
+                        padding: '1rem',
+                        didOpen: (toast) => {
+                            // Mouse ile üzerine gelince durdur
+                            toast.addEventListener('mouseenter', Swal.stopTimer);
+                            toast.addEventListener('mouseleave', Swal.resumeTimer);
+                            
+                            // Ses çal (opsiyonel - tarayıcı desteği varsa)
+                            try {
+                                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                                const oscillator = audioContext.createOscillator();
+                                const gainNode = audioContext.createGain();
+                                
+                                oscillator.connect(gainNode);
+                                gainNode.connect(audioContext.destination);
+                                
+                                oscillator.frequency.value = 800;
+                                oscillator.type = 'sine';
+                                
+                                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                                
+                                oscillator.start(audioContext.currentTime);
+                                oscillator.stop(audioContext.currentTime + 0.1);
+                            } catch (e) {
+                                // Ses çalma hatası görmezden gel
+                            }
+                        }
                     });
                 } else {
                     // Fallback olarak alert kullan

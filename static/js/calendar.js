@@ -145,19 +145,27 @@ document.addEventListener('alpine:init', () => {
     },
 
     get selectedDayTitle() {
-      if (!this.selectedDay) return '';
-      const date = new Date(this.selectedDay);
+      const dateToUse = this.selectedDay || this.getCurrentDateString();
+      const date = new Date(dateToUse + 'T12:00:00');
       return date.toLocaleDateString('tr-TR', { weekday: 'long' });
     },
 
     get selectedDayDate() {
-      if (!this.selectedDay) return '';
-      const date = new Date(this.selectedDay);
+      const dateToUse = this.selectedDay || this.getCurrentDateString();
+      const date = new Date(dateToUse + 'T12:00:00');
       return date.toLocaleDateString('tr-TR', {
         month: 'long',
         day: 'numeric',
         year: 'numeric'
       });
+    },
+
+    getCurrentDateString() {
+      const date = this.currentDate;
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     },
 
     get miniCalendarDays() {
@@ -291,6 +299,14 @@ document.addEventListener('alpine:init', () => {
         newDate.setDate(newDate.getDate() - 1);
       }
       this.currentDate = newDate;
+      
+      // Gün görünümündeyken selectedDay'i de güncelle
+      if (this.currentView === 'day') {
+        const year = newDate.getFullYear();
+        const month = String(newDate.getMonth() + 1).padStart(2, '0');
+        const day = String(newDate.getDate()).padStart(2, '0');
+        this.selectedDay = `${year}-${month}-${day}`;
+      }
     },
 
     nextPeriod() {
@@ -303,6 +319,14 @@ document.addEventListener('alpine:init', () => {
         newDate.setDate(newDate.getDate() + 1);
       }
       this.currentDate = newDate;
+      
+      // Gün görünümündeyken selectedDay'i de güncelle
+      if (this.currentView === 'day') {
+        const year = newDate.getFullYear();
+        const month = String(newDate.getMonth() + 1).padStart(2, '0');
+        const day = String(newDate.getDate()).padStart(2, '0');
+        this.selectedDay = `${year}-${month}-${day}`;
+      }
     },
 
     goToToday() {
@@ -319,12 +343,19 @@ document.addEventListener('alpine:init', () => {
 
     switchView(view) {
       this.currentView = view;
-      if (view === 'day' && !this.selectedDay) {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        this.selectedDay = `${year}-${month}-${day}`;
+      if (view === 'day') {
+        if (!this.selectedDay) {
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          this.selectedDay = `${year}-${month}-${day}`;
+          this.currentDate = today;
+        } else {
+          // Seçili günü currentDate olarak ayarla
+          const date = new Date(this.selectedDay + 'T12:00:00');
+          this.currentDate = date;
+        }
       }
     },
 
@@ -334,14 +365,25 @@ document.addEventListener('alpine:init', () => {
       // Timezone offset'ini düzelt
       const date = new Date(dateString + 'T12:00:00');
       this.selectedDate = date;
+      this.currentDate = date; // Her zaman currentDate'i güncelle
+      
+      // Gün görünümündeyken seçilen günü güncelle
       if (this.currentView === 'day') {
-        // Update current date for day view
-        this.currentDate = date;
+        // Force refresh of day view
+        this.$nextTick(() => {
+          // Trigger reactivity
+          this.currentView = 'day';
+        });
       }
     },
 
     selectDay(day) {
       this.selectDate(day.date);
+      // Eğer gün görünümündeyken bir gün seçilirse, o güne geç
+      if (this.currentView === 'day') {
+        const date = new Date(day.date + 'T12:00:00');
+        this.currentDate = date;
+      }
     },
 
     isToday(date) {
@@ -373,8 +415,16 @@ document.addEventListener('alpine:init', () => {
     },
 
     getEventsForDateTime(dateString, hour) {
-      return this.events.filter(event => {
-        if (event.date !== dateString) return false;
+      // Önce tarih kontrolü yap
+      const dayEvents = this.events.filter(event => event.date === dateString);
+      
+      // Eğer saat belirtilmemişse, o günün tüm etkinliklerini döndür
+      if (!hour) {
+        return dayEvents;
+      }
+      
+      // Saat kontrolü yap
+      return dayEvents.filter(event => {
         return this.eventMatchesHour(event, hour);
       });
     },
@@ -645,30 +695,52 @@ document.addEventListener('alpine:init', () => {
         console.log('API Response:', result);
 
         if (result.success) {
-          // Başarı mesajı
+          // Önce hemen alert göster (sayfa yenilenmeden önce)
+          const reminderCount = Array.isArray(this.eventData.selectedReminders) ? this.eventData.selectedReminders.length : 1;
+          const reminderText = reminderCount > 0 ? ` ${reminderCount} hatırlatıcı ayarlandı ve zamanı geldiğinde bildirim alacaksınız.` : '';
+          
+          // Sağ üstten toast bildirimi göster (hemen)
           if (typeof Swal !== 'undefined') {
+            // Önce toast göster
             Swal.fire({
-              title: 'Etkinlik Oluşturuldu!',
-              text: `"${this.eventData.title}" etkinliği ${this.eventData.date} tarihinde ${this.eventData.time} saatinde oluşturuldu. Hatırlatıcılar da ayarlandı.`,
+              title: '✅ Etkinlik Oluşturuldu!',
+              text: `"${this.eventData.title}" etkinliği ${this.eventData.date} tarihinde ${this.eventData.time} saatinde oluşturuldu.${reminderText}`,
               icon: 'success',
-              confirmButtonText: 'Tamam'
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 5000,
+              timerProgressBar: true,
+              didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+              }
             });
-          } else {
-            alert(`Etkinlik "${this.eventData.title}" başarıyla oluşturuldu!`);
           }
 
           // Bildirim sistemini güncelle
           if (window.notificationSystem) {
-            window.notificationSystem.loadNotifications();
+            // Biraz bekle sonra bildirimleri yükle (backend'de oluşturulması için)
+            setTimeout(() => {
+              window.notificationSystem.loadNotifications();
+              
+              // Tekrar toast göster (bildirim sistemi üzerinden)
+              if (reminderCount > 0) {
+                window.notificationSystem.showToast(
+                  `"${this.eventData.title}" etkinliği oluşturuldu!${reminderText}`,
+                  'success'
+                );
+              }
+            }, 500);
           }
 
           // Modal'ı kapat ve formu sıfırla
           this.closeModal();
 
-          // Sayfayı yenile (etkinlikleri görmek için)
+          // Sayfayı yenile (etkinlikleri görmek için) - daha uzun bekle
           setTimeout(() => {
             window.location.reload();
-          }, 1500);
+          }, 3000);
 
         } else {
           this.showValidationError('Hata: ' + (result.error || 'Etkinlik oluşturulamadı'));

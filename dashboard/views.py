@@ -1908,6 +1908,27 @@ def dismiss_notification(request, notification_id):
             'error': str(e)
         }, status=500)
 
+@login_required
+def mark_notification_sent(request, notification_id):
+    """Bildirimi gönderildi olarak işaretle"""
+    try:
+        notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+        if notification.status == 'pending':
+            notification.status = 'sent'
+            notification.sent_time = timezone.now()
+            notification.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Bildirim gönderildi olarak işaretlendi'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
 def create_event_notifications(event):
     """Etkinlik için bildirimler oluştur"""
     from datetime import datetime, timedelta
@@ -1936,13 +1957,29 @@ def create_event_notifications(event):
                 
                 # Geçmiş tarih kontrolü
                 if reminder_time > now:
+                    # Hatırlatıcı mesajını oluştur
+                    if minutes == 0:
+                        reminder_msg = f"'{event.title}' etkinliği şimdi başlıyor!"
+                    elif minutes < 60:
+                        reminder_msg = f"'{event.title}' etkinliği {minutes} dakika sonra başlayacak."
+                    elif minutes < 1440:
+                        hours = minutes // 60
+                        reminder_msg = f"'{event.title}' etkinliği {hours} saat sonra başlayacak."
+                    else:
+                        days = minutes // 1440
+                        reminder_msg = f"'{event.title}' etkinliği {days} gün sonra başlayacak."
+                    
+                    if event.location:
+                        reminder_msg += f" Konum: {event.location}"
+                    
                     # Hatırlatıcı bildirimi oluştur
                     Notification.objects.create(
                         title=f"Etkinlik Hatırlatıcısı: {event.title}",
-                        message=f"{event.title} etkinliği {minutes} dakika sonra başlayacak. Konum: {event.location or 'Belirtilmemiş'}",
+                        message=reminder_msg,
                         type='event_reminder',
                         user=event.created_by,
                         scheduled_time=reminder_time,
+                        status='pending',
                         extra_data=json.dumps({
                             'event_id': event.id,
                             'reminder_minutes': minutes,
@@ -1957,10 +1994,11 @@ def create_event_notifications(event):
         if event_datetime > now:
             Notification.objects.create(
                 title=f"Etkinlik Başlıyor: {event.title}",
-                message=f"{event.title} etkinliği şimdi başlıyor! Süre: {event.get_duration_display()}",
+                message=f"'{event.title}' etkinliği şimdi başlıyor! Süre: {event.get_duration_display()}" + (f" Konum: {event.location}" if event.location else ""),
                 type='event_start',
                 user=event.created_by,
                 scheduled_time=event_datetime,
+                status='pending',
                 extra_data=json.dumps({
                     'event_id': event.id,
                     'event_type': event.type,
@@ -1969,13 +2007,15 @@ def create_event_notifications(event):
                 })
             )
         
-        # Hemen bir bildirim de oluştur (etkinlik oluşturuldu)
+        # Hemen bir bildirim de oluştur (etkinlik oluşturuldu) - hemen gösterilmek için
         Notification.objects.create(
             title=f"Yeni Etkinlik Oluşturuldu",
-            message=f"'{event.title}' etkinliği {event.date.strftime('%d.%m.%Y')} tarihinde {event.time.strftime('%H:%M')} saatinde oluşturuldu.",
+            message=f"'{event.title}' etkinliği {event.date.strftime('%d.%m.%Y')} tarihinde {event.time.strftime('%H:%M')} saatinde oluşturuldu." + (f" Hatırlatıcılar ayarlandı." if reminders else ""),
             type='event_created',
             user=event.created_by,
-            status='sent',
+            scheduled_time=now,  # Hemen gösterilmek için şimdiki zaman
+            status='sent',  # Hemen gönderildi olarak işaretle
+            sent_time=now,  # Gönderilme zamanını da ayarla
             extra_data=json.dumps({
                 'event_id': event.id,
                 'event_type': event.type,

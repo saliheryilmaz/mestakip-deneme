@@ -1305,8 +1305,8 @@
                                     </div>
                                     <div class="day-cell" 
                                          :class="{ 'current-hour': isCurrentHour(hour) }"
-                                         @click="addEventAtTime(selectedDay, hour)">
-                                        <template x-for="event in getEventsForDateTime(selectedDay, hour)" :key="event.id">
+                                         @click="addEventAtTime(selectedDay || getCurrentDateString(), hour)">
+                                        <template x-for="event in getEventsForDateTime(selectedDay || getCurrentDateString(), hour)" :key="event.id">
                                             <div class="day-event" 
                                                  :class="`event-${event.type}`"
                                                  @click.stop="viewEvent(event)"
