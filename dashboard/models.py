@@ -13,7 +13,7 @@ class UserProfile(models.Model):
     ]
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Kullanıcı")
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='admin', verbose_name="Rol")
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='yonetici', verbose_name="Rol")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Oluşturulma Tarihi")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Güncellenme Tarihi")
     
