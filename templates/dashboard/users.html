@@ -12,7 +12,13 @@
         <p class="text-muted mb-0">Kullanıcı yönetimi ve yetkilendirme.</p>
         <small class="text-info">
             <i class="bi bi-info-circle me-1"></i>
-            Mevcut Rol: <strong>{{ user_profile.get_role_display }}</strong>
+            Mevcut Rol: <strong>
+                {% if user_profile.role == 'admin' %}
+                    Admin
+                {% else %}
+                    Yönetici
+                {% endif %}
+            </strong>
         </small>
     </div>
     {% if is_admin %}
