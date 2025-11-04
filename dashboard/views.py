@@ -178,8 +178,11 @@ def users(request):
     try:
         user_profile = UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist:
-        # Eğer profil yoksa varsayılan olarak yönetici rolü ver
-        user_profile = UserProfile.objects.create(user=request.user, role='yonetici')
+        # Eğer profil yoksa, admin kullanıcısı için admin rolü ver
+        if request.user.username == 'admin':
+            user_profile = UserProfile.objects.create(user=request.user, role='admin')
+        else:
+            user_profile = UserProfile.objects.create(user=request.user, role='yonetici')
     
     # Admin kontrolü
     is_admin = user_profile.is_admin()
