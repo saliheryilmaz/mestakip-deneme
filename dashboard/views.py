@@ -1006,6 +1006,30 @@ def messages_view(request):
     """Gelir/Gider Toplamları sayfası (kasa bazında ve genel toplam)."""
     qs = Transaction.objects.filter(created_by=request.user)
 
+    def build_entries(queryset, amount_getter):
+        entries = []
+        for tx in queryset.order_by('-tarih', '-id'):
+            raw_amount = amount_getter(tx) or 0
+            try:
+                amount = float(raw_amount)
+            except (TypeError, ValueError):
+                amount = 0
+            if amount == 0:
+                continue
+            if tx.hareket_tipi == 'gider':
+                amount = -abs(amount)
+            else:
+                amount = abs(amount)
+
+            entries.append({
+                'id': tx.id,
+                'tarih': tx.tarih.strftime('%d.%m.%Y'),
+                'hareket': tx.get_hareket_tipi_display(),
+                'aciklama': tx.aciklama or '-',
+                'amount': amount,
+            })
+        return entries
+
     # Kasa bazında hesaplama için mehmet_havale'yi dahil etmiyoruz (ayrı hesaplanacak)
     kasa_toplam_ifade = (F('nakit') + F('kredi_karti') + F('cari'))
 
@@ -1075,6 +1099,12 @@ def messages_view(request):
     # Genel toplamı güncelle (tüm kasaların toplamı)
     genel_toplam = sum([servis_toplam, merkez_satis_toplam, canta_toplam, mehmet_havale_toplam])
 
+    servis_entries = build_entries(qs.filter(kasa_adi='servis'), lambda tx: tx.toplam)
+    merkez_entries = build_entries(qs.filter(kasa_adi='merkez-satis'), lambda tx: tx.toplam)
+    canta_entries = build_entries(qs.filter(Q(kasa_adi='canta') | ~Q(nakit=0)), lambda tx: tx.nakit)
+    mehmet_havale_entries = build_entries(qs.filter(~Q(mehmet_havale=0)), lambda tx: tx.mehmet_havale)
+    genel_entries = build_entries(qs, lambda tx: tx.toplam)
+
     context = {
         'page_title': 'Gelir/Gider Toplamları',
         'servis_toplam': servis_toplam,
@@ -1083,6 +1113,11 @@ def messages_view(request):
         'mehmet_havale_toplam': mehmet_havale_toplam,
         'genel_toplam': genel_toplam,
         'kasa_satirlari': rows,
+        'servis_islemleri': servis_entries,
+        'merkez_islemleri': merkez_entries,
+        'canta_islemleri': canta_entries,
+        'mehmet_havale_islemleri': mehmet_havale_entries,
+        'genel_islemleri': genel_entries,
         # Ödeme yöntemleri toplamları (debug/ekstra bilgi için)
         'odeme_toplamlari': {
             'nakit': nakit_net,
@@ -2142,8 +2177,11 @@ def brand_distribution_api(request):
     """Lastik marka dağılımı API endpoint'i - Canlı veri"""
     try:
         # Kullanıcının siparişlerinden marka dağılımını hesapla
+        # İptal edilen siparişleri hariç tut
         brand_distribution = Siparis.objects.filter(
             user=request.user
+        ).exclude(
+            durum='iptal'
         ).values('marka').annotate(
             total_adet=Sum('adet')
         ).order_by('-total_adet')

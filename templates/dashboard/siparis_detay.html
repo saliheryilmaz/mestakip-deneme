@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load tz %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
@@ -153,10 +154,10 @@
                         <label class="form-label fw-bold">Oluşturma Tarihi</label>
                         <p class="form-control-plaintext">
                             <i class="bi bi-calendar-plus me-1"></i>
-                            {{ siparis.olusturma_tarihi|date:"d.m.Y" }}
+                            {{ siparis.olusturma_tarihi|localtime|date:"d.m.Y" }}
                             <small class="text-muted ms-2">
                                 <i class="bi bi-clock me-1"></i>
-                                {{ siparis.olusturma_tarihi|date:"H:i" }}
+                                {{ siparis.olusturma_tarihi|localtime|date:"H:i" }}
                             </small>
                         </p>
                     </div>
@@ -164,10 +165,10 @@
                         <label class="form-label fw-bold">Son Güncelleme</label>
                         <p class="form-control-plaintext">
                             <i class="bi bi-calendar-check me-1"></i>
-                            {{ siparis.guncelleme_tarihi|date:"d.m.Y" }}
+                            {{ siparis.guncelleme_tarihi|localtime|date:"d.m.Y" }}
                             <small class="text-muted ms-2">
                                 <i class="bi bi-clock me-1"></i>
-                                {{ siparis.guncelleme_tarihi|date:"H:i" }}
+                                {{ siparis.guncelleme_tarihi|localtime|date:"H:i" }}
                             </small>
                         </p>
                     </div>

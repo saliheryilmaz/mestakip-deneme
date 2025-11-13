@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load tz %}
 
 {% block title %}Users - Mestakip{% endblock %}
 {% block page_name %}users{% endblock %}
@@ -77,12 +78,12 @@
                                 </td>
                                 <td>
                                     {% if user.last_login %}
-                                        {{ user.last_login|date:"d.m.Y H:i" }}
+                                        {{ user.last_login|localtime|date:"d.m.Y H:i" }}
                                     {% else %}
                                         <span class="text-muted">Hiç giriş yapmamış</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ user.date_joined|date:"d.m.Y H:i" }}</td>
+                                <td>{{ user.date_joined|localtime|date:"d.m.Y H:i" }}</td>
                                 <td>
                                     {% if user.is_active %}
                                         <span class="badge bg-success">Aktif</span>
