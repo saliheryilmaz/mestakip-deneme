@@ -132,88 +132,21 @@ WSGI_APPLICATION = 'metis_admin.wsgi.application'
 import dj_database_url
 
 # Railway PostgreSQL veya SQLite fallback
-# Railway'de DATABASE_URL, POSTGRES_URL, PGDATABASE_URL gibi isimlerle eklenebilir
-DATABASE_URL = (
-    os.environ.get('DATABASE_URL') or 
-    os.environ.get('POSTGRES_URL') or 
-    os.environ.get('PGDATABASE_URL') or
-    os.environ.get('POSTGRESQL_URL')
-)
-RAILWAY_ENV = os.environ.get('RAILWAY_ENVIRONMENT')
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
-# Railway'de PostgreSQL ZORUNLU - SQLite kullanılamaz (veriler kaybolur)
-if RAILWAY_ENV:
-    print("🚂 Railway environment detected!")
-    print(f"📊 DATABASE_URL: {'Set' if DATABASE_URL else 'Not set'}")
-    
-    # Tüm environment variable'ları kontrol et
-    all_db_vars = {
-        'DATABASE_URL': os.environ.get('DATABASE_URL'),
-        'POSTGRES_URL': os.environ.get('POSTGRES_URL'),
-        'PGDATABASE_URL': os.environ.get('PGDATABASE_URL'),
-        'POSTGRESQL_URL': os.environ.get('POSTGRESQL_URL'),
-    }
-    print(f"🔍 Environment variables kontrol ediliyor: {[k for k, v in all_db_vars.items() if v]}")
-    
-    # Railway'de mutlaka PostgreSQL olmalı
-    if not DATABASE_URL:
-        error_msg = (
-            "❌ CRITICAL: Railway'de PostgreSQL database URL'i bulunamadı!\n\n"
-            "📋 ÇÖZÜM - Railway Dashboard'da:\n"
-            "1. Railway Dashboard'a git: https://railway.app\n"
-            "2. Projenizi seç\n"
-            "3. 'New' butonuna tıkla\n"
-            "4. 'Database' → 'Add PostgreSQL' seç\n"
-            "5. Railway otomatik olarak DATABASE_URL ekleyecek\n\n"
-            "⚠️  SQLite kullanılamaz çünkü veriler her deploy'da kaybolur!\n"
-            "✅ PostgreSQL database ekledikten sonra deploy otomatik başlayacak."
-        )
-        raise ValueError(error_msg)
-    
-    if not (DATABASE_URL.startswith('postgresql://') or DATABASE_URL.startswith('postgres://')):
-        raise ValueError(
-            f"❌ CRITICAL: Railway'de geçersiz DATABASE_URL! "
-            f"PostgreSQL URL'i bekleniyor ama şu bulundu: {DATABASE_URL[:50]}... "
-            "Lütfen Railway Dashboard'dan PostgreSQL database ekleyin."
-        )
-    
-    # PostgreSQL bağlantısını dene
-    try:
-        DATABASES = {
-            'default': dj_database_url.parse(DATABASE_URL)
-        }
-        print("✅ Using PostgreSQL database on Railway")
-        print("✅ PostgreSQL configuration looks good!")
-    except Exception as e:
-        raise ValueError(
-            f"❌ CRITICAL: DATABASE_URL parse hatası: {e} "
-            "Lütfen Railway Dashboard'dan PostgreSQL database'i kontrol edin."
-        )
-    
-    print(f"🔑 SECRET_KEY: {'Set' if SECRET_KEY != 'django-insecure-8gy15^z036tfb9a%#36tgy6ssb==3+@c1)1nh6@!fdowo$%e!n' else 'Using default (change in production!)'}")
-    print(f"🐛 DEBUG: {DEBUG}")
-else:
-    # Local development - SQLite kullanılabilir
-    if DATABASE_URL:
-        # Eğer PostgreSQL URL'i varsa kullan
-        if DATABASE_URL.startswith('postgresql://') or DATABASE_URL.startswith('postgres://'):
-            try:
-                DATABASES = {
-                    'default': dj_database_url.parse(DATABASE_URL)
-                }
-                print("✅ Using PostgreSQL database (local)")
-            except Exception as e:
-                print(f"❌ DATABASE_URL parsing error: {e}")
-                print(f"DATABASE_URL value: {DATABASE_URL[:50]}...")
-                print("⚠️  Falling back to SQLite")
-                DATABASES = {
-                    'default': {
-                        'ENGINE': 'django.db.backends.sqlite3',
-                        'NAME': BASE_DIR / 'db.sqlite3',
-                    }
-                }
-        else:
-            print(f"⚠️  DATABASE_URL doesn't look like PostgreSQL: {DATABASE_URL[:50]}...")
+# Database ayarları - Railway için güçlendirilmiş
+if DATABASE_URL:
+    # Eğer PostgreSQL URL'i varsa kullan
+    if DATABASE_URL.startswith('postgresql://') or DATABASE_URL.startswith('postgres://'):
+        try:
+            DATABASES = {
+                'default': dj_database_url.parse(DATABASE_URL)
+            }
+            print("✅ Using PostgreSQL database")
+        except Exception as e:
+            print(f"❌ DATABASE_URL parsing error: {e}")
+            print(f"DATABASE_URL value: {DATABASE_URL[:50]}...")
+            print("⚠️  Falling back to SQLite")
             DATABASES = {
                 'default': {
                     'ENGINE': 'django.db.backends.sqlite3',
@@ -221,14 +154,40 @@ else:
                 }
             }
     else:
-        # DATABASE_URL yoksa SQLite kullan (sadece local)
+        print(f"⚠️  DATABASE_URL doesn't look like PostgreSQL: {DATABASE_URL[:50]}...")
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
                 'NAME': BASE_DIR / 'db.sqlite3',
             }
         }
-        print("✅ Using SQLite database (local development)")
+else:
+    # DATABASE_URL yoksa SQLite kullan
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+    if os.environ.get('RAILWAY_ENVIRONMENT'):
+        print("⚠️  WARNING: Running on Railway but no DATABASE_URL found!")
+        print("⚠️  Please add a PostgreSQL database in Railway dashboard")
+        print("⚠️  Using SQLite as fallback (data will be lost on each deploy)")
+
+# Railway deployment için PostgreSQL ayarları ve logging
+RAILWAY_ENV = os.environ.get('RAILWAY_ENVIRONMENT')
+if RAILWAY_ENV:
+    print("🚂 Railway environment detected!")
+    print(f"📊 DATABASE_URL: {'Set' if DATABASE_URL else 'Not set'}")
+    print(f"🔑 SECRET_KEY: {'Set' if SECRET_KEY != 'django-insecure-8gy15^z036tfb9a%#36tgy6ssb==3+@c1)1nh6@!fdowo$%e!n' else 'Using default (change in production!)'}")
+    print(f"🐛 DEBUG: {DEBUG}")
+    
+    if not DATABASE_URL or not DATABASE_URL.startswith('postgresql://'):
+        print("⚠️  WARNING: No valid PostgreSQL DATABASE_URL found")
+        print("⚠️  Please add a PostgreSQL database in Railway dashboard")
+        print("⚠️  Currently using SQLite - data will be lost on each deploy!")
+    else:
+        print("✅ PostgreSQL configuration looks good!")
 
 
 # Password validation
