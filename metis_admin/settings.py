@@ -132,7 +132,13 @@ WSGI_APPLICATION = 'metis_admin.wsgi.application'
 import dj_database_url
 
 # Railway PostgreSQL veya SQLite fallback
-DATABASE_URL = os.environ.get('DATABASE_URL')
+# Railway'de DATABASE_URL, POSTGRES_URL, PGDATABASE_URL gibi isimlerle eklenebilir
+DATABASE_URL = (
+    os.environ.get('DATABASE_URL') or 
+    os.environ.get('POSTGRES_URL') or 
+    os.environ.get('PGDATABASE_URL') or
+    os.environ.get('POSTGRESQL_URL')
+)
 RAILWAY_ENV = os.environ.get('RAILWAY_ENVIRONMENT')
 
 # Railway'de PostgreSQL ZORUNLU - SQLite kullanılamaz (veriler kaybolur)
@@ -140,13 +146,29 @@ if RAILWAY_ENV:
     print("🚂 Railway environment detected!")
     print(f"📊 DATABASE_URL: {'Set' if DATABASE_URL else 'Not set'}")
     
+    # Tüm environment variable'ları kontrol et
+    all_db_vars = {
+        'DATABASE_URL': os.environ.get('DATABASE_URL'),
+        'POSTGRES_URL': os.environ.get('POSTGRES_URL'),
+        'PGDATABASE_URL': os.environ.get('PGDATABASE_URL'),
+        'POSTGRESQL_URL': os.environ.get('POSTGRESQL_URL'),
+    }
+    print(f"🔍 Environment variables kontrol ediliyor: {[k for k, v in all_db_vars.items() if v]}")
+    
     # Railway'de mutlaka PostgreSQL olmalı
     if not DATABASE_URL:
-        raise ValueError(
-            "❌ CRITICAL: Railway'de DATABASE_URL bulunamadı! "
-            "Lütfen Railway Dashboard'dan PostgreSQL database ekleyin. "
-            "SQLite kullanılamaz çünkü veriler her deploy'da kaybolur."
+        error_msg = (
+            "❌ CRITICAL: Railway'de PostgreSQL database URL'i bulunamadı!\n\n"
+            "📋 ÇÖZÜM - Railway Dashboard'da:\n"
+            "1. Railway Dashboard'a git: https://railway.app\n"
+            "2. Projenizi seç\n"
+            "3. 'New' butonuna tıkla\n"
+            "4. 'Database' → 'Add PostgreSQL' seç\n"
+            "5. Railway otomatik olarak DATABASE_URL ekleyecek\n\n"
+            "⚠️  SQLite kullanılamaz çünkü veriler her deploy'da kaybolur!\n"
+            "✅ PostgreSQL database ekledikten sonra deploy otomatik başlayacak."
         )
+        raise ValueError(error_msg)
     
     if not (DATABASE_URL.startswith('postgresql://') or DATABASE_URL.startswith('postgres://')):
         raise ValueError(
