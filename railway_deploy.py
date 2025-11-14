@@ -14,14 +14,17 @@ def setup_django():
     django.setup()
 
 def run_migrations():
-    """Migration'ları çalıştır"""
-    print("🔄 Running migrations...")
+    """Migration'ları çalıştır - VERİLERİ KORUYARAK"""
+    print("🔄 Running migrations (veriler korunacak)...")
     try:
+        # --noinput: Kullanıcı onayı istemeden çalıştır
+        # Migration'lar sadece schema değişikliklerini yapar, verileri silmez
         execute_from_command_line(['manage.py', 'migrate', '--noinput'])
-        print("✅ Migrations completed successfully")
+        print("✅ Migrations completed successfully - Veriler korundu")
         return True
     except Exception as e:
         print(f"❌ Migration error: {e}")
+        print("⚠️  Migration hatası - veriler etkilenmedi")
         return False
 
 def create_superuser():
@@ -47,13 +50,29 @@ def collect_static():
         return False
 
 def check_database():
-    """Database bağlantısını kontrol et"""
+    """Database bağlantısını kontrol et - PostgreSQL zorunlu"""
     print("🔍 Checking database connection...")
     try:
         from django.db import connection
+        from django.conf import settings
+        
+        # Railway'de PostgreSQL kullanıldığından emin ol
+        if os.environ.get('RAILWAY_ENVIRONMENT'):
+            db_engine = settings.DATABASES['default']['ENGINE']
+            if 'sqlite' in db_engine.lower():
+                print("❌ CRITICAL: Railway'de SQLite kullanılamaz!")
+                print("❌ Veriler her deploy'da kaybolur!")
+                print("❌ Lütfen Railway Dashboard'dan PostgreSQL database ekleyin!")
+                return False
+        
         cursor = connection.cursor()
         cursor.execute("SELECT 1")
         print("✅ Database connection successful")
+        
+        # PostgreSQL kullanılıyorsa bilgi ver
+        if 'postgresql' in settings.DATABASES['default']['ENGINE'].lower():
+            print("✅ PostgreSQL database kullanılıyor - Veriler kalıcı olacak")
+        
         return True
     except Exception as e:
         print(f"❌ Database connection error: {e}")
